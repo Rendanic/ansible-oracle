@@ -1,0 +1,19 @@
+---
+- name: Install s3fs-fuse
+  package:
+    name: s3fs-fuse
+    state: present
+
+- name: create directory for mountpoint
+  file:
+    path: "{{ oracle_stage_remote }}"
+    state: directory
+    mode: '0755'
+  
+- name: add s3fs mountpoint to fstab
+  mount:
+    path: "{{ oracle_stage_remote }}"
+    src: "{{ s3_bucket }}:{{ s3_bucket_subdir | default('')}}/"
+    fstype: fuse.s3fs
+    opts: "{{ s3_opts }}"
+    state: mounted
