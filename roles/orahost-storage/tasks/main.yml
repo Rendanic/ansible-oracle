@@ -20,7 +20,7 @@
     when: s3_bucket is defined 
       and s3_bucket_region is defined 
       and s3_iam_role is defined
-    tags: s3
+    tags: s3,updatedb
 
   - name: dNFS-storage | Prepare mountpoints
     file:

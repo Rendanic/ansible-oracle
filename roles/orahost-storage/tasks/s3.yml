@@ -9,7 +9,17 @@
     path: "{{ oracle_stage_remote }}"
     state: directory
     mode: '0755'
-  
+
+# ignore file scanning from updatedb
+# => could be expensive due to huge API Calls to S3...
+- name: add s3fs mountpoint to updatedb
+  replace:
+    path: /etc/updatedb.conf
+    regexp: "PRUNEPATHS = \""
+    replace: "PRUNEPATHS = \"{{ oracle_stage_remote }} "
+    backup: yes
+  tags: updatedb
+
 - name: add s3fs mountpoint to fstab
   mount:
     path: "{{ oracle_stage_remote }}"
