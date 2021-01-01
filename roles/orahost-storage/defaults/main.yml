@@ -17,7 +17,7 @@
   partition_suffix: "{% if multipath |lower == 'dm-multipath' and ansible_distribution_major_version|int == 6  %}p1{% else %}1{% endif%}"
   asmlib_binary: "{% if ansible_distribution_major_version|int == 7 %}oracleasm{% elif ansible_distribution_major_version|int == 6  %}/etc/init.d/oracleasm{% else %}/etc/init.d/oracleasm{% endif%}"
 
-  s3_opts: "ro,_netdev,iam_role={{ s3_iam_role }},endpoint={{ s3_bucket_region }},use_cache={{ s3_cachedir}},curldbg,allow_other,nonempty,complement_stat,umask=022,gid=54321"
+  s3_opts: "ro,_netdev,iam_role={{ s3_iam_role }},endpoint={{ s3_bucket_region }},use_cache={{ s3_cachedir}},curldbg,allow_other,nonempty,complement_stat,umask=022,uid=0,gid=0"
   s3_cachedir: /tmp
 
   dnfstaboptions: "{%- if item.1.fstaboptions is defined %}{{ item.1.fstaboptions }}
