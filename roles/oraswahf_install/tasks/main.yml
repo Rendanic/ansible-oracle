@@ -14,3 +14,56 @@
   fail:
     msg: "File not found: {{ ahf_archive  }}"
   when: not ahf_archivestat.stat.exists
+
+- name: Check if AHF is still installed
+  stat:
+    path: "{{ ahf_destination }}/bin/orachk"
+  register: ahfdeststat
+
+- block:  # not ahfdeststat.stat.exists
+    - name: Create directories
+      file:
+        dest: "{{ item }}"
+        mode: 0755
+        owner: root
+        state: directory
+      become: true
+      become_user: root
+      loop:
+        - "{{ ahf_tmp }}"
+        - "{{ ahf_destination }}"
+        - "{{ ahf_data_dir }}"
+
+    - name: unzip AHF-Archive to {{ ahf_tmp }}
+      unarchive:
+        src: "{{ ahf_archive }}"
+        dest: "{{ ahf_tmp }}"
+        remote_src: true
+        creates: "{{ ahf_tmp }}/ahf_setup"
+
+    - debug: msg="Start Installation Oracle AHF"  # noqa unnamed-task
+
+    - name: Installation Oracle AHF
+      command:
+        argv:
+          - "{{ ahf_tmp }}/ahf_setup"
+          - -silent
+          - -ahf_loc
+          - "{{ ahf_destination }}"
+          - -data_dir
+          - "{{ ahf_data_dir }}"
+          - -tmp_loc
+          - "{{ ahf_tmp_dir | default('/tmp') }}"
+          - -local
+          - -extract
+          - -notfasetup
+      become: true
+      become_user: root
+      register: tfasetupcmd
+      notify:
+        - cleanup tmp
+
+    - debug: var=tfasetupcmd.stdout_lines  # noqa unnamed-task
+
+  when:
+    - not ahfdeststat.stat.exists

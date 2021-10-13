@@ -1,2 +1,6 @@
 ---
 ahf_archive: "{{ oracle_stage_remote }}/ahf/{{ ahf_filename }}"
+# ahf_destination: "{{ oracle_base }}/.."  ## creates {{ oracle_base }}/../oracle.ahf
+ahf_destination: "/opt/oracle.ahf"
+ahf_data_dir: "{{ ahf_destination }}/data"
+ahf_tmp: "/tmp/ahf"

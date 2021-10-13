@@ -1,2 +1,9 @@
 ---
-# handlers file for ora_ahf
+- name: cleanup tmp
+  file:
+    dest: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ahf_tmp }}"
+  become: true
+  become_user: root
