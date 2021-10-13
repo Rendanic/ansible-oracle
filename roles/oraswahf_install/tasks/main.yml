@@ -1,0 +1,16 @@
+---
+# tasks file for ora_ahf
+- name: Check variables
+  assert:
+    that:
+      - ahf_filename is defined
+
+- name: Check for existing source file
+  stat:
+    path: "{{ ahf_archive  }}"
+  register: ahf_archivestat
+
+- name: Oracle AHF Archive not found
+  fail:
+    msg: "File not found: {{ ahf_archive  }}"
+  when: not ahf_archivestat.stat.exists
