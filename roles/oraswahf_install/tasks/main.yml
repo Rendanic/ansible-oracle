@@ -1,6 +1,24 @@
 ---
-# tasks file for ora_ahf
-- name: Check variables
+- block:  # Search for latest AHF Archive
+    - name: Get files in a folder
+      find:
+        paths: "{{ ahf_stage }}"
+        patterns: "{{ ahf_filepattern }}"
+        size: 300m
+      register: found_ahf
+
+    - name: Get latest AHF-file from find
+      set_fact:
+        ahf_filename: "{{ ahf_latest.path | basename }}"
+      when:
+        - found_ahf.files is defined
+        - found_ahf['files'] | length > 0
+
+    - debug: msg="No Archives found in {{ ahf_stage }} with Pattern {{ ahf_filepattern }}"  # noqa unnamed-task
+  when:
+    - ahf_filename is not defined
+
+- name: Check variable ahf_filename
   assert:
     that:
       - ahf_filename is defined

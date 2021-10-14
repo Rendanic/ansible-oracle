@@ -1,6 +1,9 @@
 ---
-ahf_archive: "{{ oracle_stage_remote }}/ahf/{{ ahf_filename }}"
-# ahf_destination: "{{ oracle_base }}/.."  ## creates {{ oracle_base }}/../oracle.ahf
+ahf_stage: "{{ oracle_stage_remote }}/ahf"
+ahf_archive: "{{ ahf_stage }}/{{ ahf_filename }}"
+ahf_filepattern: "AHF-LINUX_v*.zip"
 ahf_destination: "/opt/oracle.ahf"
 ahf_data_dir: "{{ ahf_destination }}/data"
 ahf_tmp: "/tmp/ahf"
+
+ahf_latest: "{{ found_ahf.files | sort(attribute='mtime',reverse=true) | first }}"
