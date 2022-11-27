@@ -1,9 +1,9 @@
-WARNING: *This guid is work in progress!*
-
 :toc:
 :toc-placement!:
 :toclevels: 4
 toc::[]
+
+WARNING: *This guid is work in progress!*
 
 == Advanced Guide
 
@@ -205,109 +205,4 @@ The execution takes ~60 minutes.
 ----
 cd /git/ansible-oracle/example/beginner/ansible
 ansible-playbook -i inventory/ -e hostgroup=dbfs playbooks/single-instance-fs.yml
-----
-
-=== How to work with installed database
-
-==== Login as vagrant
-
-.Login with SSH from `git+bash`
-----
-ssh -A vagrant@192.168.56.161
-----
-
-==== Sudo oracle
-
-.sudo oracle
-----
-[vagrant@beginner-dbfs-151-192-168-56-161 ~]$ sudo su - oracle
-----
-
-.Example
-[auote, output]
-----
-[vagrant@beginner-dbfs-151-192-168-56-161 ~]$ sudo su - oracle
-Last login: Sun Nov  6 11:16:54 UTC 2022 on pts/2
-execute ocenv to source Oracle Environment
-----
-
-==== Start ocenv
-
-.Initialize ocenv
-----
-[oracle@beginner-dbfs-151-192-168-56-161 ~]$ ocenv
-----
-
-.Example
-[auote, output]
-----
-[oracle@beginner-dbfs-151-192-168-56-161 ~]$ ocenv
-#####################################################################################
-## Version: 2022-08-10
-## get command overview by typing envhelp
-#####################################################################################
-home   oracle       OraHome_OraDB19Home1                       /u01/app/oracle/product/19/db1
-db     oracle       DB1              (up)                      /u01/app/oracle/product/19/db1
-lsnr   oracle       LISTENER                                   /u01/app/oracle/product/19/db1
-[oracle@beginner-dbfs-151-192-168-56-161] [] [~]
-----
-
-==== Switch to DB1
-
-.Set ORACLE_SID
-----
-[oracle@beginner-dbfs-151-192-168-56-161] [] [~]
-$ DB1
-----
-
-.Example
-[auote, output]
-----
-[oracle@beginner-dbfs-151-192-168-56-161] [] [~]
-$ DB1
-=================================
-INSTANCE NAME       : DB1
-INSTANCE STATUS     : OPEN (READ WRITE)
-INSTANCE START TIME : 2022-11-06 11:34:06
-DB NAME             : DB1
-DB UNIQUE NAME      : DB1
-DB ID               : 1713907024
-DB LOGGING MODE     : NOARCHIVELOG
-DB ROLE             : PRIMARY
-DB FORCE LOGGING    : YES
-DB FLASHBACK ON     : NO
-DB is CDB           : YES
-PDBs
-   PDB NAME        STATUS     RESTRICTED OPEN TIME           LOCAL UNDO
-   --------------- ---------- ---------- ------------------- ----------
-   ORCLPDB         READ WRITE NO         2022-11-06 11:34:28 YES
-=================================
-[oracle@beginner-dbfs-151-192-168-56-161] [DB1] [~]
-----
-
-==== Login
-.SQLPlus login
-----
-[oracle@beginner-dbfs-151-192-168-56-161] [DB1] [~]
-$ sql
-----
-
-.Example
-[auote, output]
-----
-[oracle@beginner-dbfs-151-192-168-56-161] [DB1] [~]
-$ sql
-
-SQL*Plus: Release 19.0.0.0.0 - Production on Sun Nov 6 11:41:40 2022
-Version 19.3.0.0.0
-
-Copyright (c) 1982, 2019, Oracle.  All rights reserved.
-
-
-Connected to:
-Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
-Version 19.3.0.0.0
-
-11:41:40 SYS@DB1
-SQL>
 ----
