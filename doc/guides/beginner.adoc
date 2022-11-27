@@ -95,7 +95,12 @@ VAGRANT_EXPERIMENTAL=disks vagrant up
 IMPORTANT: All furter steps are done inside the VM. +
 The SSH-Setup from previous chapter must be completed before!
 
-.Connect into VM with SSH from `git+bash`
+.Connect using Visual Studio Code from Windows Host (skip to next example when VSCode is not used)
+----
+code example/beginner/vscode/beginner.code-workspace
+----
+
+.Connect into VM with SSH from `git+bash` (alternative method to VSCode)
 ----
 ssh -A vagrant@192.168.56.161
 ----
