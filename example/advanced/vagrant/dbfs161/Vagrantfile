@@ -8,7 +8,7 @@
 Vagrant.configure("2") do |config|
 
   lanip = "192.168.56.161"
-  vm_name = "advanced-dbfs-151-192-168-56-161"
+  vm_name = "advanced-dbfs-161-192-168-56-161"
 
   puts " "
   puts " Single Instance Database in Filesystem"

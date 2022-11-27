@@ -22,10 +22,10 @@ System_Boundary(host, "Host System", "PC/Notebook") {
     }
   }
   Boundary(virtualbox, "VirtualBox") {
-    System(vmansible, "VM Ansible", "DNS: advanced-ansible-151-192-168-56-199.nip.io \n Oracle Linux 7\n2GB RAM, 1 Cores") {
+    System(vmansible, "VM Ansible", "DNS: ansible-151-192-168-56-160.nip.io \n Oracle Linux 7\n2GB RAM, 1 Cores") {
       Container(ansible, "Ansible-Container", "ansible-playbook single-instance-fs.yml")
    }
-    System(dbfs, "VM Database-Server", "DNS: advanced-dbfs-151-192-168-56-161.nip.io \n Oracle Linux 7\n4GB RAM, 2 Cores") {
+    System(dbfs, "VM Database-Server", "DNS: advanced-dbfs-161-192-168-56-161.nip.io \n Oracle Linux 7\n4GB RAM, 2 Cores") {
       SetPropertyHeader("Parameter","Value")
       AddProperty("ORACLE_BASE", "/u01/app/oracle")
       AddProperty("ORACLE_HOME", "/u01/app/oracle/product/19/db1")
