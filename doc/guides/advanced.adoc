@@ -7,7 +7,6 @@ WARNING: *This guid is work in progress!*
 
 == Advanced Guide
 
-
 IMPORTANT: The setup of Vagrant, VirtualBox and SSH is not part of this documentation. +
 Please follow the link:../vagrant.adoc[documentation].
 
@@ -28,19 +27,8 @@ image::{puml}/guides/advanced.puml[Architecturview]
 |~/git/ansible-oracle/ansible-oracle/example/beginner|Vagrantfile location
 |=======================
 
-=== Setup Host System
 
-IMPORTANT: All steps are executed on the Host System inside a `git+bash`.
-
-.clone git Repository
-----
-mkdir ~/git
-cd ~/git
-
-git clone https://github.com/oravirt/ansible-oracle.git
-----
-
-==== Build Oracle Software tree
+=== Oracle Installation media and Patches
 
 IMPORTANT: It is highly recommended to use the following structure. +
 Do not change this until you really know what you are doing.
@@ -49,7 +37,7 @@ All installation medias are searched in `oracle_stage_remote` on the database se
 
 WARNING: It is assumend that `oracle_stage_remote` is set to `/sw`
 
-===== Installation media
+==== Installation media
 
 IMPORTANT: Only `LINUX.X64_193000_db_home.zip` is needed as base media for the _Advanced Guide_.
 
@@ -62,7 +50,7 @@ IMPORTANT: Only `LINUX.X64_193000_db_home.zip` is needed as base media for the _
 /sw/LINUX.X64_213000_db_home.zip
 ----
 
-===== OPatch archive
+==== Patches OPatch archive
 
 IMPORTANT: Only `p6880880_190000_Linux-x86-64.zip` is needed for patching in the _Advanced Guide_.
 
@@ -74,7 +62,7 @@ IMPORTANT: Only `p6880880_190000_Linux-x86-64.zip` is needed for patching in the
 /sw/oracle/linux64/p6880880_210000_Linux-x86-64.zip
 ----
 
-===== Patch structure
+==== Patch structure
 
 <todo wip>
 
@@ -83,14 +71,27 @@ IMPORTANT: Only `p6880880_190000_Linux-x86-64.zip` is needed for patching in the
 |Directory |Description
 |=======================
 
+=== Prepare Host System
+
+IMPORTANT: All steps are executed on the Host System inside a `git+bash`.
+
+.clone git Repository
+----
+mkdir ~/git
+cd ~/git
+
+git clone https://github.com/oravirt/ansible-oracle.git
+----
+
 ==== Configure SSH-Key
 
 IMPORTANT: Do not skip the preparation for Vagrant and SSH. +
 Please follow the link:../vagrant.adoc[documentation].
 
-.Copy Public key into Vagrantfile directory
+.Copy Public key into Vagrantfile directories
 ----
-cp ~/.ssh/id_rsa.pub ~/git/ansible-oracle/ansible-oracle/example/beginner
+cp ~/.ssh/id_rsa.pub ~/git/ansible-oracle/ansible-oracle/example/advanced/vagrant/ansible/
+cp ~/.ssh/id_rsa.pub ~/git/ansible-oracle/ansible-oracle/example/advanced/vagrant/dbfs161/
 ----
 
 .Start ssh-Agent
@@ -103,6 +104,8 @@ eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa
 ----
 
+=== Ansible-Controller
+
 ==== Start Vagrantbox
 
 IMPORTANT: The Deployment und provisioning of the VM takes some minutes. +
@@ -113,32 +116,27 @@ IMPORTANT: The SSH public key is configured during the provisioning phase of the
 
 .vagrant up
 ----
-cd ~/git/ansible-oracle/ansible-oracle/example/beginner
+cd ~/git/ansible-oracle/ansible-oracle/example/advanced/vagrant/ansible
 VAGRANT_EXPERIMENTAL=disks vagrant up
 ----
-
-=== Working inside the VM
 
 ==== Connect to VM
 
 IMPORTANT: All furter steps are done inside the VM. +
 The SSH-Setup from previous chapter must be completed before!
 
-.Connect into VM with SSH from `git+bash`
+
+.Test connection with ssh in `git+bash`
 ----
-ssh -A vagrant@192.168.56.161
+ssh -A vagrant@192.168.56.160
+exit
 ----
 
-==== Note about Installation media
+VSCode will open the connection to the target and mount the home automatically, when started with a workspacefile.
 
-The installation media is mounted with vboxsf from Vagrant into the VM at `/vagrant`. +
-You can check this.
-
-.check for Installation media
+.Open RemoteSSH Session with Visual Studio Code
 ----
-[vagrant@beginner-dbfs-151-192-168-56-161 ~]$ ls /vagrant/LINUX.X64_193000_db_home.zip
-
-/vagrant/LINUX.X64_193000_db_home.zip
+code example/advanced/vscode/advanced.code-workspace
 ----
 
 ==== Start Ansible-Container inside VM
@@ -193,16 +191,4 @@ Downloading https://galaxy.ansible.com/download/community-general-5.8.0.tar.gz t
 community.crypto:2.8.0 was installed successfully
 Installing 'community.general:5.8.0' to '/ansible/galaxy/ansible_collections/community/general'
 community.general:5.8.0 was installed successfully
-----
-
-==== Start Installation with Ansible
-
-IMPORTANT: Make sure to start the installation inside the Ansible Container. +
-The prompt shows the correct location. +
-The execution takes ~60 minutes.
-
-.Start installation with Ansible
-----
-cd /git/ansible-oracle/example/beginner/ansible
-ansible-playbook -i inventory/ -e hostgroup=dbfs playbooks/single-instance-fs.yml
 ----
