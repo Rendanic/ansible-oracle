@@ -128,7 +128,7 @@ e|Database Services <<table1footnote,^[3]^>>
 |Timezone Upgrades
 |{supportedfrom12}
 
-.3+|Database Patching
+.4+|Database Patching
 |Release Updates<<table1footnote,^[11]^>>
 .3+|{supportedfrom12}
 
@@ -137,6 +137,9 @@ a|OneOff Patches<<table1footnote,^[11]^>>
 - Install
 - Remove with unique patch id option
 |automatic datapatch execution<<table1footnote,^[11]^>>
+
+e|Monthly Recommended Patches<<table1footnote,^[12]^>>
+|not supported
 
 |Environment script
 a|dynamic shell environment link:https://github.com/opitzconsulting/oracle-scripts[`ocenv`] for Oracle
@@ -173,3 +176,5 @@ a|dynamic shell environment link:https://github.com/opitzconsulting/oracle-scrip
   Use the Golden-Image feauture as a work arround.
 [[table1footnote]]^11^::
   Supported for Single-Instance, Oracle Restart and Oracle Grid-Infrastructure.
+[[table1footnote]]^12^::
+  See link:https://github.com/oravirt/ansible-oracle/issues/309[Issue 309] for more details.
