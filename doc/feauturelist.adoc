@@ -138,8 +138,8 @@ a|OneOff Patches<<table1footnote,^[11]^>>
 - Remove with unique patch id option
 |automatic datapatch execution<<table1footnote,^[11]^>>
 
-e|Monthly Recommended Patches<<table1footnote,^[12]^>>
-|not supported
+e|Monthly Recommended Patches
+|19c (with work around)<<table1footnote,^[12]^>>
 
 |Environment script
 a|dynamic shell environment link:https://github.com/opitzconsulting/oracle-scripts[`ocenv`] for Oracle
