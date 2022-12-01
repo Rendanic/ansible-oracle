@@ -4,7 +4,7 @@
       "uri": "vscode-remote://ssh-remote+vagrant@ansible-151-192-168-56-160.nip.io/home/vagrant"
     }
   ],
-  "remoteAuthority": "ssh-remote+vagrant@beginner-dbfs-151-192-168-56-161.nip.io",
+  "remoteAuthority": "ssh-remote+vagrant@ansible-151-192-168-56-160.nip.io",
   "settings": {
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
