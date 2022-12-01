@@ -16,12 +16,6 @@ Vagrant.configure("2") do |config|
   puts " "
   puts " Hostname: #{vm_name}"
   puts " IP:       #{lanip}"
-  puts " Logins:"
-  puts "           vagrant / vagrant"
-  puts "           root    / vagrant"
-  puts " "
-  puts " Please do the 1st start with following command to create the additional disks!"
-  puts " VAGRANT_EXPERIMENTAL=disks vagrant up"
   puts " "
 
   config.vm.box =  "Rendanic/oraclelinux-7.x"
@@ -46,12 +40,6 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.provision "shell", inline: <<-SHELL
-
-    if [ ! -b /dev/sdb ]; then
-      echo "Please start the Box with following command once to create the addional disks!"
-      echo "VAGRANT_EXPERIMENTAL=disks vagrant up"
-      exit 1
-    fi
 
     # copy public key to vagrant user
     ssh_public_key=$(find /vagrant/*.pub -printf "%p")
