@@ -119,7 +119,7 @@ a|init.ora Parameter <<table1footnote,^[7]^>>)
 e|Redolog Groups <<table1footnote,^[6]^>>
 |Database Roles
 e|Database Services <<table1footnote,^[3]^>>
-|Tablespaces
+|Tablespaces <<table1footnote,^[12]^>>
 |Users
 |Scripts with SQLPlus
 |Custom DBCA-Templates
@@ -173,3 +173,5 @@ a|dynamic shell environment link:https://github.com/opitzconsulting/oracle-scrip
   Use the Golden-Image feauture as a work arround.
 [[table1footnote]]^11^::
   Supported for Single-Instance, Oracle Restart and Oracle Grid-Infrastructure.
+[[table1footnote]]^12^::
+  Tablespaces with multiple datafiles are only supported when OMF is used.
