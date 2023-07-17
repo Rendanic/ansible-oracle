@@ -1,0 +1,400 @@
+---
+_meta_helper_pdb: "{{ opdb.0 | default(item.0 | default({})) }}"
+
+# get db_unique_name from CDB for current pdb
+# get db_name when db_unique_name is missing
+_db_unique_name_for_pdb: >-
+  {{ (oracle_databases
+    | selectattr('oracle_db_name', 'match', _meta_helper_pdb.cdb)
+    | map(attribute='oracle_db_unique_name', default=_meta_helper_pdb.cdb))[0]
+  }}
+
+_db_service_pdb: >-
+  {%- set __db_domain_pdb = oracledb_facts[_db_unique_name_for_pdb]['parameter']['db_domain']['value'] -%}
+  {%- if __db_domain_pdb is defined and __db_domain_pdb is string and __db_domain_pdb | length > 0 -%}{{ _meta_helper_pdb.pdb_name }}.{{ __db_domain_pdb }}{%- else -%}
+  {{ _meta_helper_pdb.pdb_name }}{% endif %}
+
+install_from_nfs: false
+
+oracle_user: oracle                        # User that will own the Oracle Installations.
+grid_user: grid
+grid_install_user: "{% if role_separation %}{{ grid_user }}{% else %}{{ oracle_user }}{% endif %}"
+oracle_user_home: "/home/{{ oracle_user }}"       # Home directory for oracle_user. Needed for passing in ssh-keys, profiles etc
+grid_user_home: "/home/{{ grid_install_user }}"   # Home directory for oracle_user. Needed for passing in ssh-keys, profiles etc
+oracle_group: oinstall                            # Primary group for oracle_user.
+oper_group: oper
+dba_group: dba                                    # Primary group for oracle_user.
+asmoper_group: asmoper
+asmdba_group: asmdba                              # Primary group for oracle_user.
+asmadmin_group: asmadmin                          # Primary group for oracle_user.
+
+db_homes_config:
+  21300-base:
+    home: db1-base
+    version: 21.3.0.0
+    edition: EE
+  19300-base:
+    home: db1-base
+    version: 19.3.0.0
+    edition: EE
+  18300-base:
+    home: db1-base
+    version: 18.3.0.0
+    edition: EE
+  12201-base:
+    home: db1-base
+    version: 12.2.0.1
+    edition: EE
+  12201-180717:
+    home: db1-180717
+    version: 12.2.0.1
+    edition: EE
+    opatch_minversion: 12.2.0.1.12
+    opatchauto:
+      - patchid: 28183653
+        patchversion: 12.2.0.1.180717
+        state: present
+        subpatches:
+          - 28163133
+          - 28163190
+    opatch: []
+
+
+db_homes_installed:
+  - home: 19300-base
+    apply_patches: false
+    state: present
+  - home: 12201-base
+    apply_patches: false
+    state: absent
+  - home: 12201-180717
+    apply_patches: true
+    state: absent
+
+
+oracle_sw_patches:
+  - filename: p28183653_122010_Linux-x86-64.zip
+    patchid: 28183653
+    version: 12.2.0.1
+    patchversion: 12.2.0.1.180717
+    description: GI-RU-July-2018
+    creates: 28183653/28163133/files/suptools/orachk.zip
+  - filename: p27468969_122010_Linux-x86-64.zip
+    patchid: 27468969
+    version: 12.2.0.1
+    patchversion: 12.2.0.1.180417
+    description: GI-RU-April-2018
+    creates: 27468969/27674384/README.txt
+  - filename: p28140658_12201180417DBAPR2018RU_Linux-x86-64.zip
+    patchid: 28140658
+    version: 12.2.0.1
+    patchversion: 12201180417DBAPR2018RU
+    description: 'PARALLEL QUERY Patch for Bug# 28140658 for Linux-x86-64 Platforms'
+    creates: online/files/hpatch/bug28140658.pch
+  - filename: p27967747_121020_Linux-x86-64.zip
+    patchid: 27967747
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.180717
+    description: GI-PSU-Jul-2018
+    creates: 27967747/27762277/etc/xml/ShiphomeDirectoryStructure.xml
+  - filename: p27468957_121020_Linux-x86-64.zip
+    patchid: 27468957
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.180417
+    description: GI-PSU-Apr-2018
+    creates: 27468957/27338013/etc/config/inventory.xml
+  - filename: p19392646_121020_Linux-x86-64.zip
+    patchid: 19392646
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.1
+    description: GI-PSU-Oct-2014
+  - filename: p20485724_121020_Linux-x86-64.zip
+    patchid: 20485724
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.3
+    description: GI-PSU-Apr-2015
+  - filename: p21523234_121020_Linux-x86-64.zip
+    patchid: 21523234
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.5
+    description: GI-PSU-Oct-2015
+  - filename: p24412235_121020_Linux-x86-64.zip
+    patchid: 24412235
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.161018
+    description: GI-PSU-Oct-2016
+  - filename: p24968615_121020_Linux-x86-64.zip
+    patchid: 24968615
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.170117
+    description: GI-PSU-Jan-2017
+  - filename: p25434003_121020_Linux-x86-64.zip
+    patchid: 25434003
+    version: 12.1.0.2
+    patchversion: 12.1.0.2.170418
+    description: GI-PSU-Apr-2017
+  - filename: p27967757_112040_Linux-x86-64.zip
+    patchid: 27967757
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.180717
+    description: GI-PSU-Jul-2018
+    creates: 27967757/27959254/files/lib/acfstoolsdriver.sh
+  - filename: p27475913_112040_Linux-x86-64.zip
+    patchid: 27475913
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.180417
+    description: GI-PSU-Apr-2018
+    creates: 27475913/22502505/files/lib/acfstoolsdriver.sh
+  - filename: p25078431_11204160419forACFS_Linux-x86-64.zip
+    patchid: 25078431
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.160419
+    description: '11.2.0.4.160419 for ACFS'
+  - filename: p19380115_112040_Linux-x86-64.zip
+    patchid: 19380115
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.4
+    description: GI-PSU-Apr-2018
+  - filename: p19380115_112040_Linux-x86-64.zip
+    patchid: 19380115
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.4
+    description: GI-PSU-Oct-2014
+  - filename: p20485808_112040_Linux-x86-64.zip
+    patchid: 20485808
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.6
+    description: GI-PSU-Apr-2015
+  - filename: p21523375_112040_Linux-x86-64.zip
+    patchid: 21523375
+    version: 11.2.0.4
+    patchversion: 11.2.0.4.8
+    description: GI-PSU-Oct-2015
+
+
+oracle_opatch_patch:
+  - filename: p6880880_210000_Linux-x86-64.zip
+    version: 21.3.0.0
+  - filename: p6880880_190000_Linux-x86-64.zip
+    version: 19.3.0.0
+  - filename: p6880880_180000_Linux-x86-64.zip
+    version: 18.3.0.0
+  - filename: p6880880_122010_Linux-x86-64.zip
+    version: 12.2.0.1
+  - filename: p6880880_122010_Linux-x86-64.zip
+    version: 12.1.0.2
+  - filename: p6880880_121010_Linux-x86-64.zip
+    version: 12.1.0.1
+  - filename: p6880880_112000_Linux-x86-64.zip
+    version: 11.2.0.4
+  - filename: p6880880_112000_Linux-x86-64.zip
+    version: 11.2.0.3
+
+
+oracle_base: /u01/app/oracle
+oracle_home_db: "{%- if dbh is defined -%}
+                    {%- if db_homes_config[dbh.home]['oracle_home'] is defined  -%}
+                         {{ db_homes_config[dbh.home]['oracle_home'] }}
+                    {%- else -%}
+                         {{ oracle_base }}/{{ db_homes_config[dbh.home]['version'] }}/{{ db_homes_config[dbh.home]['home'] }}
+                    {%- endif -%}
+                 {%- elif pdb.0.home is defined %}
+                    {%- if db_homes_config[pdb.0.home]['oracle_home'] is defined  -%}
+                         {{ db_homes_config[pdb.0.home]['oracle_home'] }}
+                    {%- else -%}
+                         {{ oracle_base }}/{{ db_homes_config[pdb.0.home]['version'] }}/{{ db_homes_config[pdb.0.home]['home'] }}
+                    {%- endif -%}
+                 {%- elif item.0 is defined -%}
+                    {%- if db_homes_config[item.0.home]['oracle_home'] is defined  -%}
+                         {{ db_homes_config[item[0].home]['oracle_home'] }}
+                    {%- else -%}
+                         {{ oracle_base }}/{{ db_homes_config[item.0.home]['version'] }}/{{ db_homes_config[item.0.home]['home'] }}
+                    {%- endif -%}
+                 {%- elif item[1] is defined -%}
+                    {%- if db_homes_config[item[1].home]['oracle_home'] is defined  -%}
+                         {{ db_homes_config[item[1].home]['oracle_home'] }}
+                    {%- else -%}
+                         {{ oracle_base }}/{{ db_homes_config[item[1].home]['version'] }}/{{ db_homes_config[item[1].home]['home'] }}
+                    {%- endif -%}
+                 {%- elif item is defined -%}
+                    {%- if db_homes_config[item.home]['oracle_home'] is defined  -%}
+                         {{ db_homes_config[item.home]['oracle_home'] }}
+                    {%- else -%}
+                         {{ oracle_base }}/{{ db_homes_config[item.home]['version'] }}/{{ db_homes_config[item.home]['home'] }}
+                    {%- endif -%}
+                 {%- endif -%}"
+
+db_version: "{%- if dbh is defined and db_homes_config[dbh.home] is defined -%}
+                 {%- if db_homes_config[dbh.home]['version'] is defined  -%}
+                      {{ db_homes_config[dbh.home]['version'] }}
+                 {%- endif -%}
+             {%- elif item.0 is defined and db_homes_config[item.0.home] is defined -%}
+                 {%- if db_homes_config[item.0.home]['version'] is defined  -%}
+                      {{ db_homes_config[item.0.home]['version'] }}
+                  {%- endif -%}
+             {%- elif item[0] is defined and db_homes_config[item[0].home] is defined -%}
+                 {%- if db_homes_config[item[0].home]['version'] is defined  -%}
+                      {{ db_homes_config[item[0].home]['version'] }}
+                 {%- endif -%}
+             {%- elif item[1] is defined and db_homes_config[item[1].home] is defined -%}
+                 {%- if db_homes_config[item[1].home]['version'] is defined  -%}
+                      {{ db_homes_config[item[1].home]['version'] }}
+                 {%- endif -%}
+             {%- elif item is defined and db_homes_config[item.home] is defined -%}
+                 {%- if db_homes_config[item.home]['version'] is defined  -%}
+                      {{ db_homes_config[item.home]['version'] }}
+                 {%- endif -%}
+             {%- endif -%}"
+
+oracle_db_instance_name: "{%- if opdb.0.cdb is defined -%}
+                            {%- for db in oracle_databases -%}
+                              {%- if db.oracle_db_name == opdb.0.cdb -%}
+                              {{ db.oracle_db_instance_name | default(db.oracle_db_unique_name | default(db.oracle_db_name)) }}
+                              {%- endif -%}
+                            {%- endfor -%}
+                          {%- endif -%}"
+
+oracle_home_gi: "{% if configure_cluster %}{{ oracle_home_gi_cl }}{% else %}{{ oracle_home_gi_so }}{% endif %}"
+oracle_home_gi_cl: "/u01/app/{{ oracle_install_version_gi }}/grid"  # ORACLE_HOME for Grid Infrastructure (Clustered)
+oracle_home_gi_so: "{{ oracle_base }}/{{ oracle_install_version_gi }}/grid"  # ORACLE_HOME for Grid Infrastructure (Stand Alone)
+
+disable_ee_options: true
+
+# Do not change _oracle_ee_opiton_dict. It is only used for internal purposes.
+_oracle_ee_opiton_dict:
+  '11.2.0.4': "{{ oracle_ee_options_112 }}"
+  '12.1.0.1': "{{ oracle_ee_options_121 }}"
+  '12.1.0.2': "{{ oracle_ee_options_121 }}"
+  '12.2.0.1': "{{ oracle_ee_options_122 }}"
+  '18.3.0.0': "{{ oracle_ee_options_183 }}"
+  '19.3.0.0': "{{ oracle_ee_options_193 }}"
+  '21.3.0.0': "{{ oracle_ee_options_213 }}"
+
+# disable all options who requires extra licences
+oracle_ee_options_112:
+  - {option: dm, state: false}
+  - {option: dv, state: false}
+  - {option: lbac, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+oracle_ee_options_121:
+  - {option: dm, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+oracle_ee_options_122:
+  - {option: oaa, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+oracle_ee_options_183:
+  - {option: oaa, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+oracle_ee_options_193:
+  - {option: oaa, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+oracle_ee_options_213:
+  - {option: oaa, state: false}
+  - {option: olap, state: false}
+  - {option: partitioning, state: false}
+  - {option: rat, state: false}
+
+# This is an example layout of a database installation
+oracle_databases:                                        # Dictionary describing the databases to be installed
+  - home: 19300-base                                     # 'Last' directory in ORACLE_HOME path (e.g /u01/app/oracle/12.1.0.2/racdb)
+    oracle_db_name: orcl                                 # Database name
+    oracle_db_type: SI                                   # Type of database (RAC,RACONENODE,SI)
+    is_container: true                                   # (true/false) Is the database a container database
+    storage_type: FS                                     # Database storage to be used. ASM or FS.
+    oracle_db_mem_totalmb: 1024                          # Amount of RAM to be used for SGA + PGA
+    oracle_database_type: MULTIPURPOSE                   # MULTIPURPOSE|DATA_WAREHOUSING|OLTP
+    redolog_size: 100M
+    redolog_groups: 3
+    archivelog: false
+    flashback: false
+    force_logging: false
+    listener_name: LISTENER
+    state: present                                       # present | absent
+    statspack:
+      purgedays: 14
+      snaplevel: 5
+      state: present
+    tablespaces:
+      - {name: system, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+      - {name: sysaux, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+      - {name: undotbs1, size: 10M, autoextend: true, next: 50M, maxsize: 8G, content: permanent, state: present, bigfile: false}
+      - {name: users, size: 10M, autoextend: true, next: 50M, maxsize: 2G, content: permanent, state: present, bigfile: false}
+      - {name: temp, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+    init_parameters:
+      - {name: audit_trail, value: 'NONE', scope: spfile, state: present}
+      - {name: control_management_pack_access, value: 'NONE', scope: both, state: present}
+      - {name: control_file_record_keep_time, value: '30', scope: both, state: present}
+      - {name: db_files, value: '200', scope: spfile, state: present}
+      - {name: deferred_segment_creation, value: 'false', scope: both, state: present}
+      - {name: filesystemio_options, value: 'setall', scope: spfile, state: present}
+      - {name: job_queue_processes, value: '10', scope: both, state: present}
+      # Disable forcing hugepages on really small systems
+      #  - {name: use_large_pages ,value: 'ONLY', scope: spfile, state: present}
+      - {name: log_archive_dest_1, value: 'location=USE_DB_RECOVERY_FILE_DEST', scope: both, state: present}
+      - {name: log_buffer, value: '64M', scope: spfile, state: present}
+      - {name: pga_aggregate_target, value: '200M', scope: both, state: present, dbca: false}
+      - {name: sga_target, value: '1800M', scope: spfile, state: present, dbca: false}
+      - {name: recyclebin, value: 'off', scope: spfile, state: present}
+      - {name: streams_pool_size, value: '152M', scope: spfile, state: present}
+      - {name: "_cursor_obsolete_threshold", value: '1024', scope: spfile, state: present}
+      - {name: max_pdbs, value: '3', scope: both, state: present}
+      - {name: clonedb, value: 'true', scope: spfile, state: present, dbca: false}
+      - {name: db_create_file_dest, value: '/u02/oradata', scope: both, state: present}
+      - {name: db_create_online_log_dest_1, value: '/u02/oradata', scope: both, state: present}
+      - {name: db_recovery_file_dest_size, value: '10G', scope: both, state: present, dbca: false}
+    profiles:
+      - name: DEFAULT
+        state: present
+        attributes:
+          - {name: password_life_time, value: unlimited}
+    users:
+      - schema: dbsnmp
+        state: unlocked
+        update_password: always
+
+oracle_pdbs:
+  - home: 19300-base
+    listener_port: 1521
+    cdb: orcl
+    pdb_name: ORCLPDB
+    state: present
+    statspack:
+      purgedays: 14
+      snaplevel: 7
+      state: present
+    tablespaces:
+      - {name: system, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+      - {name: sysaux, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+      - {name: undotbs1, size: 10M, autoextend: true, next: 50M, maxsize: 8G, content: permanent, state: present, bigfile: false}
+      - {name: users, size: 10M, autoextend: true, next: 50M, maxsize: 2G, content: permanent, state: present, bigfile: false}
+      - {name: temp, size: 10M, autoextend: true, next: 50M, maxsize: 4G, content: permanent, state: present, bigfile: false}
+
+# DB
+default_dbpass: "{% if item is defined and item.oracle_db_passwd is defined %}{{ item.oracle_db_passwd }}\
+                 {%- elif dbh is defined and dbh.oracle_db_passwd is defined %}{{ dbh.oracle_db_passwd }}\
+                 {%- else %}Oracle123\
+                 {%- endif %}"
+
+dbpasswords:
+  orcl:
+    sys: Oracle_456
+    system: Oracle_456
+    dbsnmp: Oracle_456
+    pdbadmin: Oracle_456
+
+## END-OF-PASSWORDS

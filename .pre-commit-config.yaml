@@ -3,20 +3,40 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.4.0
     hooks:
-      # needs some cleanup in project before enabling
-      # - id: trailing-whitespace
-      # - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
       - id: check-yaml
       - id: check-symlinks
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: detect-private-key
       - id: forbid-new-submodules
+      - id: check-executables-have-shebangs
+      - id: no-commit-to-branch
+
+  - repo: https://github.com/python/black.git
+    rev: 23.3.0
+    hooks:
+      - id: black
+        # language_version: python3
+        # files: plugins/modules/*.py
+        files: \.py$
+        include: plugins/modules
+
+  - repo: https://github.com/pycqa/flake8
+    rev: '6.0.0'
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/ansible-community/antsibull-changelog.git
+    rev: main
+    hooks:
+      - id: antsibull-changelog-lint
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v5.2.0
+    rev: v6.14.4
     hooks:
       - id: ansible-lint
         entry: ansible-lint --force-color -p

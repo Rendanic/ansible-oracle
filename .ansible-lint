@@ -2,11 +2,16 @@
 use_default_rules: true
 
 skip_list:
-  - role-name
-  # must be fixed at later time
-  - var-naming
+  - name[casing]
 
 exclude_paths:
   - .github
   - dbhome-conversion
-  - library
+  - docker
+  - plugins/modules
+  - playbooks/desupported
+  - changelogs
+  - roles/oraemagent_install  # deprecated role
+
+extra_vars:
+  hostgroup: all

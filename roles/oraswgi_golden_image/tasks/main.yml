@@ -1,0 +1,34 @@
+---
+- ansible.builtin.assert:  # noqa name[missing]
+    that: golden_image_dest is defined
+
+# Creating Oracle Restart Golden-Image requires a running stack under 19c
+- name: Golden-Image
+  become: true
+  become_user: "{{ oracle_user }}"
+  when:
+    - oracle_home_gi is defined
+  block:
+    - name: Check for running Oracle Restart when installed
+      ansible.builtin.command: "{{ oracle_home_gi }}/bin/crsctl status server"
+      # noqa no-changed-when
+      register: crscheck
+
+    - ansible.builtin.debug:  # noqa name[missing]
+        msg: "{{ crscheck.stdout_lines }}"
+      when: crscheck.stdout_lines is defined
+
+    - name: Create destination directory for Golden-Image {{ golden_image_dest }}
+      ansible.builtin.file:
+        path: "{{ golden_image_dest }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create Golden-Image
+      ansible.builtin.command: "{{ oracle_home_gi }}/gridSetup.sh -silent -createGoldImage -destinationLocation {{ golden_image_dest }}"
+      # noqa no-changed-when
+      register: createimage
+
+    - ansible.builtin.debug:  # noqa name[missing]
+        msg: "{{ createimage.stdout_lines }}"
+      when: createimage.stdout_lines is defined

@@ -1,0 +1,4 @@
+
+.vagrant
+*.pub
+LINUX.X64_*.zip

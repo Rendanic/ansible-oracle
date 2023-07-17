@@ -1,0 +1,142 @@
+---
+# Some variable have been renamed from upper to lowercase
+# The assert is checking for old - not supported - variables
+# in inventory to prevent unexpected behavior during installations.
+- name: Check for desupported inventory variables
+  ansible.builtin.assert:
+    fail_msg: Please rename the variable to lowercase in Inventory
+    that:
+      - disable_EE_options is not defined
+      - oracle_EE_options is not defined
+      - oracle_EE_options_112 is not defined
+      - oracle_EE_options_121 is not defined
+      - oracle_EE_options_122 is not defined
+      - oracle_EE_options_183 is not defined
+      - oracle_EE_options_193 is not defined
+      - oracle_EE_options_213 is not defined
+  tags:
+    - always
+    - assert
+
+- name: install_home_db | assert hostinitdaemon
+  ansible.builtin.assert:
+    fail_msg: the init-Daemon could not be defined from defaults/main.yml
+    that:
+      - _hostinitdaemon_dict[ansible_os_family]['version_highest'] is defined
+  tags:
+    - always
+    - assert
+
+- name: install_home_db | Mount nfs share with installation media
+  ansible.builtin.include_role:
+    name: orasw_meta
+    tasks_from: mount_stage_remote
+  tags:
+    - nfsmountdb
+
+- name: install_home_db | Add oraInst.loc
+  ansible.builtin.template:
+    src: oraInst.loc.j2
+    dest: /etc/oraInst.loc
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: "0644"
+    backup: true
+  tags:
+    - orainst
+
+- name: install_home_db | Create common directories
+  ansible.builtin.file:
+    dest: "{{ item.name }}"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    state: directory
+  with_items: "{{ oracle_directories }}"
+  tags:
+    - directoriesdb
+
+- name: install_home_db | Create stage directory (version specific)
+  ansible.builtin.file:
+    dest: "{{ oracle_stage }}/{{ db_version }}"
+    mode: "0775"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    state: directory
+  with_items:
+    - "{{ db_homes_installed }}"
+  run_once: "{{ configure_cluster }}"
+  when:
+    - db_homes_installed is defined
+    - item.state|lower == 'present'
+  tags:
+    - directoriesdb
+
+- name: install_home_db | Create ORACLE_HOME directory
+  ansible.builtin.file:
+    dest: "{{ oracle_home_db }}"
+    mode: "0775"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    state: directory
+  with_items: "{{ db_homes_installed }}"
+  when:
+    - db_homes_config[item.home] is defined
+    - item.state|lower == 'present'
+  tags:
+    - directoriesdb
+
+- ansible.builtin.include_tasks: "{{ www_download_bin }}.yml"  # noqa name[missing]
+  when:
+    - not is_sw_source_local
+    - oracle_sw_copy
+
+- name: install_home_db | Transfer oracle installfiles to server (local)
+  ansible.builtin.copy:
+    src: "{{ oracle_sw_source_local }}/{{ db_homes_config[item[1].home].imagename | default(item[0].filename) }}"
+    dest: "{{ oracle_stage }}"
+    mode: 0775
+    force: false
+  with_nested:
+    - "{{ oracle_sw_image_db }}"
+    - "{{ db_homes_installed }}"
+  become: true
+  become_user: "{{ oracle_user }}"
+  run_once: "{{ configure_cluster }}"
+  when:
+    - item[0].version == db_homes_config[item[1].home]['version']
+    - item[1].state|lower == 'present'
+    - is_sw_source_local
+    - oracle_sw_copy
+  tags:
+    - oradbsw
+
+- ansible.builtin.include_tasks: install-home-db.yml  # noqa name[missing]
+  with_items:
+    - "{{ db_homes_installed }}"
+  loop_control:
+    loop_var: dbh
+  when:
+    - db_homes_installed is defined
+    - dbh.state | lower == 'present'
+  tags: oradbinstall,dbchopt
+
+- name: install_home_db | Unmount nfs share with installation media
+  ansible.builtin.include_role:
+    name: orasw_meta
+    tasks_from: umount_stage_remote
+  tags:
+    - nfsumountdb
+
+- name: install_home_db | copy start/stop script for autostart
+  ansible.builtin.copy:
+    dest: /usr/local/bin
+    src: manage_oracle_rdbms_procs.sh
+    mode: 0755
+  tags: autostartup_service
+
+- ansible.builtin.include_tasks: "{{ hostinitdaemon }}.yml"  # noqa name[missing]
+  when: autostartup_service
+  tags:
+    - autostartup_service
+    - always

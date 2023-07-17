@@ -20,7 +20,7 @@ oracle_users:         # Passwd :Oracle123
   - username: oracle
     uid: 54321
     primgroup: oinstall
-    othergroups: "dba,asmadmin,asmdba,backupdba,dgdba,kmdba,oper"
+    othergroups: "dba,asmadmin,asmdba,asmoper,backupdba,dgdba,kmdba,oper"
     passwd: "$6$0xHoAXXF$K75HKb64Hcb/CEcr3YEj2LGERi/U2moJgsCK.ztGxLsKoaXc4UBiNZPL0hlxB5ng6GL.gyipfQOOXplzcdgvD0"
 
 grid_users:
@@ -30,13 +30,14 @@ grid_users:
     othergroups: "asmadmin,asmdba,asmoper,dba"
     passwd: "$6$0xHoAXXF$K75HKb64Hcb/CEcr3YEj2LGERi/U2moJgsCK.ztGxLsKoaXc4UBiNZPL0hlxB5ng6GL.gyipfQOOXplzcdgvD0"
 
-firewall_service: "{% if ansible_distribution_major_version|int==6%}iptables{%elif ansible_distribution_major_version|int==7 %}firewalld{% else %}0{% endif %}"
+firewall_service: "{% if ansible_distribution_major_version | int == 6 %}iptables{% elif ansible_distribution_major_version | int == 7 %}firewalld{% else %}0{% endif %}"
 role_separation: false
 oracle_user: oracle                        # User that will own the Oracle Installations.
 grid_user: grid
-grid_install_user: "{% if role_separation %}{{grid_user }}{% else %}{{ oracle_user }}{% endif %}"
-configure_oracle_sudo: true
-etc_hosts_ip: "{% if 'virtualbox' in ansible_virtualization_type %}{{ansible_all_ipv4_addresses[1]}}{% else %}{{ansible_default_ipv4.address}}{%endif%}"
+grid_install_user: "{% if role_separation %}{{ grid_user }}{% else %}{{ oracle_user }}{% endif %}"
+configure_oracle_sudo: false
+sudoers_template: sudoers.j2
+etc_hosts_ip: "{% if 'virtualbox' in ansible_virtualization_type %}{{ ansible_all_ipv4_addresses[1] }}{% else %}{{ ansible_default_ipv4.address }}{% endif %}"
 oracle_inventory_loc: /u01/app/oraInventory
 
 oracle_user_home: "/home/{{ oracle_user }}"  # Home directory for oracle_user. Needed for passing in ssh-keys, profiles etc
@@ -59,35 +60,35 @@ ssh_keys:
 keyfile: /tmp/known_hosts
 
 # Extra repositories that should be enabled
-extrarepos_enabled: "{%- if ansible_distribution == 'OracleLinux' -%}
-                          ol{{ ansible_distribution_major_version }}_addons
-                     {%- else -%}
+extrarepos_enabled: "{%- if ansible_distribution == 'OracleLinux' -%}\
+                          ol{{ ansible_distribution_major_version }}_addons\
+                     {%- else -%}\
                      {%- endif %}"
 extrarepos_disabled:
 
 # Install oracleasm-support from RPM-Repo on OracleLinux
-asmlib_rpm: "{%- if ansible_distribution_major_version|int == 6 %}
-               {{ asmlib_rpm_el6 }}
-             {%- elif ansible_distribution_major_version|int ==7 %}
-               {{ asmlib_rpm_el7 }}
-             {%- elif ansible_distribution_major_version|int ==8 %}
-               {{ asmlib_rpm_el8 }}
-             {%- else %}
-               None
+asmlib_rpm: "{%- if ansible_distribution_major_version | int == 6 %}\
+               {{ asmlib_rpm_el6 }}\
+             {%- elif ansible_distribution_major_version | int == 7 %}\
+               {{ asmlib_rpm_el7 }}\
+             {%- elif ansible_distribution_major_version | int == 8 %}\
+               {{ asmlib_rpm_el8 }}\
+             {%- else %}\
+               None\
              {%- endif %}"
 
-asmlibsupport_rpm: "{%- if ansible_distribution == 'OracleLinux' -%}
-                      oracleasm-support
-                    {%- else -%}
-                      {%- if ansible_distribution_major_version|int == 6 -%}
-                        {{asmlibsupport_rpm_el6}}
-                      {%- elif ansible_distribution_major_version|int == 7 -%}
-                        {{asmlibsupport_rpm_el7}}
-                      {%- elif ansible_distribution_major_version|int == 8 -%}
-                        {{asmlibsupport_rpm_el8}}
-                      {%- else -%}
-                        oracleasm-support
-                      {%- endif -%}
+asmlibsupport_rpm: "{%- if ansible_distribution == 'OracleLinux' -%}\
+                      oracleasm-support\
+                    {%- else -%}\
+                      {%- if ansible_distribution_major_version | int == 6 -%}\
+                        {{ asmlibsupport_rpm_el6 }}\
+                      {%- elif ansible_distribution_major_version | int == 7 -%}\
+                        {{ asmlibsupport_rpm_el7 }}\
+                      {%- elif ansible_distribution_major_version | int == 8 -%}\
+                        {{ asmlibsupport_rpm_el8 }}\
+                      {%- else -%}\
+                        oracleasm-support\
+                      {%- endif -%}\
                     {%- endif -%}"
 
 asmlib_rpm_el6: "http://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.4-1.el6.x86_64.rpm"
@@ -118,6 +119,9 @@ configure_ssh: false                        # (true/false). Should passwordless 
 # mountpoints are described in host_fs_layout
 configure_host_disks: false
 
+configure_limits_pam: true  # entry in /etc/pam.d/limits
+configure_limits: true      # /etc/security.d/limits.d/99-oracle-limits.conf file
+
 configure_etc_hosts: false
 configure_cluster: false
 oracle_stage: /u01/stage
@@ -132,27 +136,28 @@ transparent_hugepage_disable:
   - {disable: "echo never >", path: /sys/kernel/mm/transparent_hugepage/defrag, rclocal: /etc/rc.d/rc.local}
 
 configure_hugepages: true
-configure_hugepages_by: percentage          # percentage/memory
+configure_hugepages_by: memory              # percentage/memory
 percent_hugepages: 50                       # Percentage (0-100) of total RAM to dedicate to hugepages, Configures vm.nr_hugepages
 size_in_gb_hugepages: 1                     # The amount of RAM in GB to dedicate to hugepages
-nr_hugepages_percent: "{{((((percent_hugepages/100) * ansible_memtotal_mb)/2)+2)|round|int }}"
-nr_hugepages_memory: "{{ (((size_in_gb_hugepages*1024)/2)+2)|round|int }}"
-nr_hugepages: "{% if configure_hugepages %}
-                 {%- if configure_hugepages_by|lower == 'percentage' %}{{ nr_hugepages_percent }}
-                 {%- elif configure_hugepages_by|lower == 'memory' %}{{ nr_hugepages_memory }}
-                 {%- endif %}
-                 {%- else %}0
+nr_hugepages_percent: "{{ ((((percent_hugepages / 100) * ansible_memtotal_mb) / 2) + 2) | round | int }}"
+nr_hugepages_memory: "{{ (((size_in_gb_hugepages * 1024) / 2) + 2) | round | int }}"
+nr_hugepages: "{% if configure_hugepages %}\
+                 {%- if configure_hugepages_by | lower == 'percentage' %}{{ nr_hugepages_percent }}\
+                 {%- elif configure_hugepages_by | lower == 'memory' %}{{ nr_hugepages_memory }}\
+                 {%- endif %}\
+                 {%- else %}0\
                {%- endif %}"
 
 host_fs_layout:
   - vgname: vgora
     state: present
     filesystem:
-      - {mntp: /u01, lvname: lvora, lvsize: 100%FREE, fstype: ext4}
+      - {mntp: /u01, lvname: lvorabase, lvsize: 25G, fstype: xfs}
+      - {mntp: /u02, lvname: lvoradata, lvsize: 25G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
     disk:
       - {device: /dev/sdb, pvname: /dev/sdb1}
 
-host_fs_layout_vgdisks: "{%- for disk in item.disk -%} {{disk.pvname}} {%- if not loop.last -%},{%- endif -%}{% endfor %}"
+host_fs_layout_vgdisks: "{%- for disk in item.disk -%} {{ disk.pvname }}{%- if not loop.last -%},{%- endif -%}{% endfor %}"
 
 # asm_diskgroups:
 #  - diskgroup: crs
@@ -238,39 +243,66 @@ oracle_packages:
   - cpp
   - lsof
 
-oracle_packages_sles:
-  - ksh
-  - binutils
-  - gcc
-  - gcc48
-  - glibc
-  - glibc-32bit
-  - glibc-devel
-  - glibc-devel-32bit
-  - mksh
-  - libaio1
-  - libaio-devel
-  - libcap1
-  - libstdc++48-devel
-  - libstdc++48-devel
-  - libstdc++6
-  - libstdc++6-32bit
-  - libstdc++-devel
-  - libstdc++-devel-32bit
-  - libgcc_s1
-  - libgcc_s1-32bit
-  - lsof
-  - make
-  - sysstat
-  - xorg-x11-driver-video
-  - xorg-x11-server
-  - xorg-x11-essentials
-  - xorg-x11-Xvnc
-  - xorg-x11-fonts-core
-  - xorg-x11
-  - xorg-x11-server-extra
-  - xorg-x11-libs
-  - xorg-x11-fonts
+# based on https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/database-installation-guide-linux.pdf
+oracle_packages_sles_multi:
+  - name: SLES common packages
+    condition: true
+    packages:
+      - bc
+      - binutils
+      - glibc
+      - glibc-devel
+      - libaio-devel
+      - libaio1
+      - libcap-ng-utils
+      - libcap-ng0
+      - libcap-progs
+      - libcap2
+      - libgcc_s1
+      - libpcap1
+      - libpcre1
+      - libpcre16-0
+      - libpng16-16
+      - libstdc++6
+      - libtiff5
+      - libXau6
+      - libXrender1
+      - libXtst6
+      - make
+      - mksh
+      - pixz
+      - rdma-core
+      - rdma-core-devel
+      - smartmontools
+      - sysstat
+      - xorg-x11-libs
+      - xz
+  - name: SLES 12 packages
+    condition: "{{ ansible_distribution_major_version == '12' }}"
+    packages:
+      - libcap1
+      - libelf-devel
+      - libjpeg-turbo
+      - libjpeg62
+      - libjpeg62-turbo
+      - libX11
+  - name: SLES 15 packages
+    condition: "{{ ansible_distribution_major_version == '15' }}"
+    packages:
+      - insserv-compat
+      - libelf1
+      - libgfortran4
+      - libjpeg8
+      - libX11-6
+      - libXext-devel
+      - libXext6
+      - libXi-devel
+      - libXi6
+      - libXrender-devel
+  - name: "SLES 15 SP3+ extra packages"
+    condition: "{{ ansible_distribution_version is version('15.3', 'ge') }}"
+    packages:
+      - compat-libpthread-nonshared  # only difference to 15.2 yet required - https://www.suse.com/releasenotes/x86_64/SUSE-SLES/15-SP3/index.html
 
 oracle_asm_packages:
   - "{{ asmlib_rpm }}"
