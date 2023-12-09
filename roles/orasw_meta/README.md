@@ -854,6 +854,8 @@ shell_ps1: "'[$LOGNAME'@'$ORACLE_SID `basename $PWD`]$'"
 **_assert_ansible_oracle_**\
 &emsp;Assert inventory variables from ansible-oracle
 
+**_assert_memory_**
+
 **_nfsmountdb_**
 
 **_nfsumountdb_**
