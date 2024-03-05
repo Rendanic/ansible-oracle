@@ -28,11 +28,14 @@
         - odb.0.redolog_size is defined
         - odb.0.redolog_groups is defined
         - odb.0.state == 'present'
+        - oracledb_facts[_oracle_db_unique_name]['state'] | default('') == 'present'
       become_user: "{{ oracle_user }}"
       become: true
       loop_control:
         loop_var: odb
         label: >-
+          db_name: {{ odb.0.oracle_db_name | default('') }}
           service: {{ _db_service_name }}:{{ _listener_port_cdb }}
           groups: {{ odb.0.redolog_groups }}
           size: {{ odb.0.redolog_size }}
+          db_state: {{ oracledb_facts[_oracle_db_unique_name]['state'] | default('') }}
