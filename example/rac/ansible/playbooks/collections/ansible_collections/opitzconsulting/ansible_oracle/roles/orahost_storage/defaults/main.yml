@@ -1,0 +1,46 @@
+---
+
+# @todo bug: why is variable multipath only used for dm-multipath?
+# @var multipath:description: Configure multipath
+# @var multipath: $ "none"
+# @var multipath:example: >
+# multipath: dm-multipath
+# @end
+multipath: none
+
+# @var partition_devices:description: >
+# Create a partition on storage disk?
+# @end
+partition_devices: true
+
+# @var use_partition_devices:description: >
+# Deprecated variable. Use `partition_devices` as replacement.
+# @end
+use_partition_devices: "{{ partition_devices }}"
+
+# @var partition_suffix:description: >
+# Value of `partition_suffix` depends on vairable `multipath`.
+# No need to set this variable.
+# @end
+# @var partition_suffix: $ "1"
+partition_suffix: "{% if multipath | lower == 'dm-multipath' and ansible_distribution_major_version | int == 6 %}p1{% else %}1{% endif %}"
+
+asmlib_binary: /usr/sbin/oracleasm
+
+# @var oradnfs:description: >
+# Defines the settings for dnfstab in Oracle.
+# @end
+# @var oradnfs: $ "_unset_"
+
+# @var oradnfs:example: >
+# oradnfs:
+#  - server: nfsserver
+#    ips:
+#      - local: dbserver
+#        path: nfsserver
+#    exports:
+#      - export: /nfs/oradata
+#        mount: /u02/oradata2
+#      - export: /nfs/oradata2
+#        mount: /u02/oradata
+# @end

@@ -1,0 +1,9 @@
+---
+# @var oradb_datapatch_fail_on_db_not_exist:description: >
+# Should task for datapatch fail when database from `oracle_databases` is not existing?
+#
+# Important!
+# Do not use `fail_on_db_not_exist` anymore.
+# The variable is deprecated and will be removed in a future release!
+# @end
+oradb_datapatch_fail_on_db_not_exist: "{{ fail_on_db_not_exist | default(false) }}"

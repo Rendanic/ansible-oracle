@@ -1,0 +1,24 @@
+# Common playbook - sets up the host generic stuff
+---
+- name: Assert
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - common_assert
+
+- name: Include distribution specified tasks
+  ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+
+- name: Start and enable ntp or chrony
+  ansible.builtin.service:
+    name: "{{ ntp_type }}d"
+    state: started
+    enabled: true
+  when: configure_ntp
+
+- name: Add motd
+  ansible.builtin.template:
+    src: "{{ motd_template }}"
+    dest: /etc/motd
+    mode: 0644
+  tags: motd
+  when: configure_motd

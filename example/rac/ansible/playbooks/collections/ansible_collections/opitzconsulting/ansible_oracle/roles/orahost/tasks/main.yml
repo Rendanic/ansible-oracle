@@ -1,0 +1,481 @@
+# orahost playbook
+---
+- name: Assert
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - orahost_assert
+
+- name: Include distribution specified tasks
+  ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+  tags:
+    - always
+
+- name: Timezone
+  when: os_timezone is defined
+  block:
+    - name: Set Timezone  # noqa args[module]
+      community.general.timezone:
+        name: "{{ os_timezone }}"
+        hwclock: "{{ os_hwclock | default(omit) }}"
+      register: timezoneresult
+      tags: timezone
+
+    - name: Restart crond after timezone change  # noqa no-handler
+      ansible.builtin.service:
+        name: crond
+        state: restarted
+      when:
+        - timezoneresult is defined
+        - timezoneresult.changed
+      tags: timezone
+
+- name: Check dns for host
+  ansible.builtin.command: host {{ ansible_hostname }}
+  register: ns
+  ignore_errors: true
+  changed_when: false
+  tags: etchosts
+
+- name: Add host to /etc/hosts if needed
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ ansible_fqdn }}$'
+    line: "{{ etc_hosts_ip }} {{ ansible_hostname }} {{ ansible_fqdn }}"
+    state: present
+  when: configure_etc_hosts
+  tags: etchosts
+
+#  - name: Add local node's ip & hostname to /etc/hosts
+#    lineinfile: dest=/etc/hosts line="{{ ansible_default_ipv4.address }} {{ ansible_fqdn }} {{ ansible_hostname }} " state=present
+#    when: configure_etc_hosts and ansible_default_ipv4.address is defined
+
+- name: User | Add group(s)
+  ansible.builtin.group:
+    name: "{{ item.group }}"
+    gid: "{{ item.gid | default(omit) }}"
+    state: present
+  with_items: "{{ oracle_groups }}"
+  tags:
+    - group
+
+- name: User | Add Oracle user
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    group: "{{ item.primgroup }}"
+    groups: "{{ item.othergroups }}"
+    uid: "{{ item.uid | default(omit) }}"
+    home: "{{ item.home | default(omit) }}"
+    generate_ssh_key: true
+    append: true
+    state: present
+    password: "{{ item.passwd | default(omit) }}"
+  with_items: "{{ oracle_users }}"
+  tags:
+    - user
+
+- name: User | Add Grid user
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    group: "{{ item.primgroup }}"
+    groups: "{{ item.othergroups }}"
+    uid: "{{ item.uid | default(omit) }}"
+    home: "{{ item.home | default(omit) }}"
+    generate_ssh_key: true
+    append: true
+    state: present
+    password: "{{ item.passwd | default(omit) }}"
+  when: role_separation
+  with_items: "{{ grid_users }}"
+  tags:
+    - user
+
+- name: User | Add Oracle user to sudoers
+  ansible.builtin.template:
+    src: "{{ sudoers_template }}"
+    dest: "/etc/sudoers.d/{{ item.username }}"
+    owner: root
+    mode: 0440
+  with_items: "{{ oracle_users }}"
+  when:
+    - configure_oracle_sudo
+  tags:
+    - sudoadd
+
+- name: User | Add Grid user to sudoers
+  ansible.builtin.template:
+    src: "{{ sudoers_template }}"
+    dest: "/etc/sudoers.d/{{ item.username }}"
+    owner: root
+    mode: 0440
+  with_items: "{{ grid_users }}"
+  when:
+    - role_separation
+    - configure_oracle_sudo
+  tags:
+    - sudoadd
+
+- name: ssh-keys | Generate SSH keys
+  local_action: shell rm -f /tmp/id_rsa*; ssh-keygen -q -N "" -f /tmp/id_rsa ; chmod +r /tmp/id_rsa; cat /tmp/id_rsa.pub > /tmp/authorized_keys  # noqa yaml no-handler deprecated-local-action ignore-errors no-changed-when fqcn[action-core]
+  ignore_errors: true
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+    - _orasw_meta_primary_node | bool
+  become: false
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Add ssh-keys & authorized_keys to oracle user
+  ansible.builtin.copy:
+    src: "{{ item[1] }}"
+    dest: "{{ item[0].home | default(oracle_user_home | regex_replace('[^/]+$', '') + item[0].username) }}/.ssh"
+    owner: "{{ item[0].username }}"
+    group: "{{ item[0].primgroup }}"
+    force: true
+    mode: "0600"
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+  with_nested:
+    - "{{ oracle_users }}"
+    - "{{ ssh_keys }}"
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Add ssh-keys & authorized_keys to grid user
+  ansible.builtin.copy:
+    src: "{{ item[1] }}"
+    dest: "{{ item[0].home | default(oracle_user_home | regex_replace('[^/]+$', '') + item[0].username) }}/.ssh"
+    owner: "{{ item[0].username }}"
+    group: "{{ item[0].primgroup }}"
+    force: true
+    mode: 0600
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - role_separation
+    - old_ssh_config
+  with_nested:
+    - "{{ grid_users }}"
+    - "{{ ssh_keys }}"
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Add short name to known_hosts
+  local_action: shell ssh-keyscan -p {{ ansible_ssh_port | default(22) }} -H {{ ansible_hostname }} 2> /dev/null >> {{ keyfile }}  # noqa deprecated-local-action ignore-errors
+  # noqa fqcn[action-core] no-changed-when
+  ignore_errors: true
+  become: false
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Add FQDN to known_hosts
+  local_action: shell ssh-keyscan -p {{ ansible_ssh_port | default(22) }} -H {{ ansible_fqdn }} 2> /dev/null >> {{ keyfile }}  # noqa yaml ignore-errors deprecated-local-action
+  # noqa fqcn[action-core] no-changed-when
+  ignore_errors: true
+  become: false
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Add IPv4 to known_hosts
+  local_action: shell ssh-keyscan -p {{ ansible_ssh_port | default(22) }} -H {{ ansible_default_ipv4.address }} 2> /dev/null >> {{ keyfile }}  # noqa ignore-errors deprecated-local-action
+  # noqa fqcn[action-core] no-changed-when
+  ignore_errors: true
+  become: false
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Copy known_hosts to oracle user
+  ansible.builtin.copy:
+    src: "{{ keyfile }}"
+    dest: "{{ item.home | default(oracle_user_home | regex_replace('[^/]+$', '') + item.username) }}/.ssh/known_hosts"
+    owner: "{{ item.username }}"
+    group: "{{ item.primgroup }}"
+    mode: "0644"
+  with_items: "{{ oracle_users }}"
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Copy known_hosts to grid user
+  ansible.builtin.copy:
+    src: "{{ keyfile }}"
+    dest: "{{ item.home | default(oracle_user_home | regex_replace('[^/]+$', '') + item.username) }}/.ssh/known_hosts"
+    owner: "{{ item.username }}"
+    group: "{{ item.primgroup }}"
+    mode: "0644"
+  with_items: "{{ grid_users }}"
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - role_separation
+    - old_ssh_config
+  tags:
+    - sshkeys
+
+- name: ssh-keys | Remove generated keys from control machine
+  local_action: file path="{{ item }}" state=absent  # noqa deprecated-local-action ignore-errors
+  # noqa fqcn[action-core]
+  with_items:
+    - "{{ ssh_keys }}"
+    - "{{ keyfile }}"
+  when:
+    - configure_ssh
+    - _oraswgi_meta_configure_cluster
+    - old_ssh_config
+    - _orasw_meta_primary_node | bool
+  ignore_errors: true
+  become: false
+  tags:
+    - sshkeys
+
+- name: filesystem | configure hostfs
+  when:
+    - configure_host_disks | bool
+    - host_fs_layout is defined
+  tags: hostfs
+  block:
+    - name: filesystem | Create directories
+      ansible.builtin.file:
+        path: "{{ item.1.mntp }}"
+        state: directory
+        owner: "{{ oracle_user }}"
+        group: "{{ oracle_group }}"
+        mode: "0775"
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+
+    # create partition only when device != pvname
+    - name: filesystem | Create partition and pv
+      ansible.builtin.command: parted --script -a optimal -s {{ item.1.device }} "mklabel gpt mkpart primary 1 -1"
+      # noqa
+      args:
+        creates: "{{ item.1.pvname }}"
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - disk
+        - flags:
+          skip_missing: true
+      when:
+        - item.1 is defined
+        - item.1.device != item.1.pvname
+
+    - name: filesystem | Create vg  # noqa: args[module]
+      community.general.lvg:
+        vg: "{{ item.vgname }}"
+        pvs: >-
+          {%- for disk in item.disk -%} {{ disk.pvname }}{%- if not loop.last -%},{%- endif -%}{% endfor %}
+        state: "{{ item.state }}"
+      with_items: "{{ host_fs_layout }}"
+
+    - name: filesystem | create lv
+      community.general.lvol:
+        vg: "{{ item.0.vgname }}"
+        lv: "{{ item.1.lvname }}"
+        size: "{{ item.1.lvsize }}"
+        state: present
+        shrink: false
+        resizefs: true
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+
+    - name: filesystem | create fs  # noqa: args[module]
+      community.general.filesystem:
+        fstype: "{{ item.1.fstype }}"
+        dev: "/dev/{{ item.0.vgname }}/{{ item.1.lvname }}"
+        opts: "{{ item.1.fsopts | default(omit) }}"
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+
+    - name: filesytem | mount dir
+      ansible.posix.mount:
+        name: "{{ item.1.mntp }}"
+        src: "/dev/{{ item.0.vgname }}/{{ item.1.lvname }}"
+        dump: 1
+        passno: 2
+        fstype: "{{ item.1.fstype }}"
+        opts: "{{ item.1.mntopts | default(omit) }}"
+        state: mounted
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+      when:
+        - item.1.fstype is defined
+        - item.1.fstype != 'swap'
+
+    - name: filesytem | add swap to fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^/dev/{{ item.0.vgname }}/{{ item.1.lvname }} '
+        line: "/dev/{{ item.0.vgname }}/{{ item.1.lvname }} swap swap defaults 0 0"
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+      when:
+        - item.1.fstype is defined
+        - item.1.fstype == 'swap'
+      notify:
+        - swapon
+
+    - name: filesystem | Change permission on directories
+      ansible.builtin.file:
+        path: "{{ item.1.mntp }}"
+        owner: "{{ item.1.owner | default(oracle_user) }}"
+        group: "{{ item.1.group | default(oracle_group) }}"
+        mode: "{{ item.1.mode | default('0775') }}"
+        state: directory
+      with_subelements:
+        - "{{ host_fs_layout }}"
+        - filesystem
+
+- name: filesystem | Create directory for oraInventory
+  ansible.builtin.file:
+    path: "{{ oracle_inventory_loc }}"
+    state: directory
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: "0775"
+  tags: hostfs
+
+- name: Oracle-recommended kernel settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    ignoreerrors: true
+  with_items: "{{ oracle_sysctl }}"
+  tags:
+    - sysctl
+    - molecule-idempotence-notest
+
+- name: Oracle hugepages
+  when:
+    - configure_hugepages | bool
+  tags:
+    - sysctl
+    - hugepages
+    - molecule-idempotence-notest
+  block:
+    - name: Oracle hugepages
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: true
+        ignoreerrors: true
+      with_items: "{{ oracle_hugepages }}"
+      register: systclcmd
+
+    # There is no safe way to allocate Hugepages in a running system.
+    # => A reboot should be done after changing the configuration
+    # => we won't reboot during installation
+    # Work Arroud:
+    # => Flush File Cache
+    # => retry a sysctl -p
+    - name: Flush Buffer Cache  # noqa no-handler
+      when:
+        - systclcmd is defined
+        - systclcmd.changed
+      block:
+        - name: Flush Buffer Cache when hugepages have been changed
+          ansible.builtin.command: echo 2 > /proc/sys/vm/drop_caches
+          # noqa no-changed-when
+
+        - name: Try sysctl again
+          ansible.posix.sysctl:
+            name: "{{ item.name }}"
+            value: "{{ item.value }}"
+            state: present
+            reload: true
+          with_items: "{{ oracle_hugepages }}"
+
+- name: Oracle-recommended PAM config
+  ansible.builtin.lineinfile:
+    dest: /etc/pam.d/login
+    state: present
+    line: "session required pam_limits.so"
+  tags: pamconfig
+  when:
+    - configure_limits_pam
+    - configure_limits
+
+- name: Network | Configure NOZEROCONF
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/network
+    regexp: "^NOZEROCONF="
+    line: "NOZEROCONF=yes"
+  when:
+    - netnozeroconf | default(true) | bool
+    - ansible_os_family == 'RedHat'
+  tags: nozeroconf
+
+- name: Network | Setup ip-address for RAC Interconnect
+  ansible.builtin.template:
+    src: ifcfg-eth1.j2
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ oracle_gi_nic_priv }}"
+    owner: root
+    mode: "0644"
+  when:
+    - configure_interconnect
+    - _oraswgi_meta_configure_cluster
+    - ansible_os_family == 'RedHat'
+  tags:
+    - eth1
+  register: ic
+
+- name: Network | Bring up eth1  # noqa no-handler
+  ansible.builtin.service:
+    name: network
+    state: restarted
+  when:
+    - configure_interconnect
+    - _oraswgi_meta_configure_cluster
+    - ic.changed
+    - ansible_os_family == 'RedHat'
+  tags:
+    - eth1
+
+- name: Create stage directory
+  ansible.builtin.file:
+    dest: "{{ oracle_stage }}"
+    mode: "0775"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    state: directory
+  tags: stagedir
+
+- name: Create rsp stage directory
+  ansible.builtin.file:
+    dest: "{{ oracle_rsp_stage }}"
+    mode: "0775"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    state: directory
+  tags: stagedir
+
+- name: Include Tasks depending on device_persistence variable
+  ansible.builtin.include_tasks: "device_persistence_{{ device_persistence }}.yml"
+  when: device_persistence in ('asmlib', 'udev')
+  tags:
+    - always

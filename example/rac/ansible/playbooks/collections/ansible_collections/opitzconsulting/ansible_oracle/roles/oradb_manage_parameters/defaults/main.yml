@@ -1,0 +1,11 @@
+---
+# @var restart_spparameter_changed:description: >
+# Bounce instane when parameter changes detected between SPFile and memory parameter.
+#
+# IMPORTANT Note!
+#
+# Some memory parameters are rounded internally by Oracle.
+# Changing them in SPFile could lead to a bounce of the instance each time the role is executed.
+# Change the paramter to the rounded value from Oracle to prevent this.
+# @end
+restart_spparameter_changed: false

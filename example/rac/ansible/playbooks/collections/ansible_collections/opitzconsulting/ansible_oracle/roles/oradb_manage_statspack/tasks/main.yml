@@ -1,0 +1,357 @@
+---
+# @tag spcreate:description: Install Statspack in nonCDB, CDB or PDB
+# @tag spdrop:description: Remove Statspack from nonCDB, CDB or PDB
+# @tag spjob:description: Configure Statspack Scheduler Jobs
+# @tag statspack:description: Do all Tasks for Statspack
+
+- name: Assert
+  ansible.builtin.import_role:
+    name: orasw_meta
+    tasks_from: assert_oracle_databases.yml
+    allow_duplicates: false
+  tags:
+    - spcreate
+    - spdrop
+    - statspack
+
+- name: Drop Statspack
+  tags:
+    - spdrop
+    - statspack
+  block:
+
+    - name: Drop Statspack Schema
+      ansible.builtin.script: spdrop.sh
+      vars:
+        _sid:
+          ORACLE_SID: "{{ _oracle_db_instance_name }}"
+      environment: "{{ _oracle_env | combine(_sid) }}"
+      loop:
+        - "{{ oracle_databases | flatten(levels=1) }}"
+      loop_control:
+        loop_var: odb
+        label: "{{ odb.0.oracle_db_name }}"
+      register: statspackdropcmd
+      become: true
+      become_user: "{{ oracle_user }}"
+      when:
+        - odb.0.statspack is defined
+        - odb.0.statspack.state | default('present') == 'absent'
+      changed_when:
+        - '"Statspack dropped" in statspackdropcmd.stdout'
+
+  rescue:
+    - name: fail
+      ansible.builtin.fail:
+        msg: execution failed for drop Statspack Schema
+
+  always:
+
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      with_items:
+        - "{{ statspackdropcmd.results }}"
+      loop_control:
+        label: ""
+      when:
+        - statspackdropcmd is defined
+        - item.stdout_lines is defined
+        - item.changed or item.failed
+
+- name: Create statspack
+  tags:
+    - spcreate
+    - statspack
+  block:
+
+    - name: Create Statspack Schema
+      block:
+
+        - name: Create Statspack Schema)
+          ansible.builtin.script: spcreate.sh
+          environment:
+            ORACLE_HOME: "{{ _oracle_home_db }}"
+            ORACLE_SID: "{{ _oracle_db_instance_name }}"
+            perfstat_password: "{{ _db_password_cdb }}"
+            temporary_tablespace: "{{ odb.0.statspack.tablespace_temp | default('temp') }}"
+            default_tablespace: "{{ odb.0.statspack.tablespace | default('sysaux') }}"
+            purgedates: "{{ odb.0.statspack.purgedays | default(35) }}"
+            snaplevel: "{{ odb.0.statspack.snaplevel | default(7) }}"
+          vars:
+            # db_user is needed for _db_password_cdb to point to PERFSTAT
+            db_user: PERFSTAT
+          loop:
+            - "{{ oracle_databases | flatten(levels=1) }}"
+          loop_control:
+            loop_var: odb
+            label: "{{ odb.0.oracle_db_name | default('') }}"
+          register: statspackcmd
+          become: true
+          become_user: "{{ oracle_user }}"
+          changed_when:
+            - '"Installation of Statspack completed." in statspackcmd.stdout'
+          when:
+            - odb.0.state == 'present'
+            - odb.0.statspack is defined
+            - odb.0.statspack.state == 'present'
+
+      rescue:
+        - name: fail
+          ansible.builtin.fail:
+            msg: execution failed for create Statspack Schema (existing user is ignored)
+
+      always:
+
+        - name: Debug
+          ansible.builtin.debug:
+            msg: "{{ item.stdout_lines }}"
+          with_items:
+            - "{{ statspackcmd.results }}"
+          loop_control:
+            label: ""
+          when:
+            - statspackcmd is defined
+            - item.stdout_lines is defined
+            - item.changed or item.failed
+
+- name: Create/modify Purge Job
+  opitzconsulting.ansible_oracle.oracle_job:
+    hostname: "{{ oracle_hostname }}"
+    service_name: "{{ _db_service_name }}"
+    port: "{{ _listener_port_cdb }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_cdb }}"
+    mode: "{{ db_mode }}"
+    job_name: "PERFSTAT.PURGE"
+    comments: "Statspack Purge-Job"
+    job_type: "plsql_block"
+    job_action: "PERFSTAT.STATSPACK.PURGE({{ odb.statspack.purgedays | default(purgedays) }});"
+    logging_level: "runs"
+    repeat_interval: "{{ odb.0.statspack.purgeinterval | default(purgeinterval) }}"
+    state: "present"
+  environment: "{{ _oracle_env }}"
+  loop:
+    - "{{ oracle_databases | flatten(levels=1) }}"
+  when:
+    - oracle_databases is defined
+    - odb.0.state == 'present'
+    - odb.0.statspack is defined
+    - odb.0.statspack.state == 'present'
+  become: true
+  become_user: "{{ oracle_user }}"
+  loop_control:
+    loop_var: odb
+    label: "{{ odb.0.oracle_db_name }}"
+  tags:
+    - spjob
+    - statspack
+
+- name: Create/modify Snapshot Job
+  opitzconsulting.ansible_oracle.oracle_job:
+    hostname: "{{ oracle_hostname }}"
+    service_name: "{{ _db_service_name }}"
+    port: "{{ _listener_port_cdb }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_cdb }}"
+    mode: "{{ db_mode }}"
+    job_name: "PERFSTAT.SNAPSHOT"
+    comments: "Statspack Snapshot-Job"
+    job_type: "plsql_block"
+    job_action: "PERFSTAT.STATSPACK.SNAP(i_snap_level => {{ odb.statspack.snaplevel | default(snaplevel) }});"
+    logging_level: "runs"
+    repeat_interval: "{{ odb.0.statspack.snapinterval | default(snapinterval) }}"
+    state: "present"
+  environment: "{{ _oracle_env }}"
+  loop:
+    - "{{ oracle_databases | flatten(levels=1) }}"
+  when:
+    - oracle_databases is defined
+    - odb.0.state == 'present'
+    - odb.0.statspack is defined
+    - odb.0.statspack.state == 'present'
+  become: true
+  become_user: "{{ oracle_user }}"
+  loop_control:
+    loop_var: odb
+    label: "{{ odb.0.oracle_db_name }}"
+  tags:
+    - spjob
+    - statspack
+
+- name: Drop Statspack Schema (PDB)
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - spdrop
+    - statspack
+  block:
+    - name: Drop Statspack Schema (PDB)
+      ansible.builtin.script: spdrop.sh
+      environment:
+        ORACLE_HOME: "{{ _oracle_home_pdb }}"
+        ORACLE_SID: "{{ _oracle_db_instance_name }}"
+        pdb_name: "{{ opdb.0.pdb_name }}"
+      loop:
+        - "{{ oracle_pdbs | flatten(levels=1) }}"
+      loop_control:
+        loop_var: opdb
+        label: >-
+          {{ opdb.0.cdb | default('') }}
+          {{ opdb.0.pdb_name | default('') }}
+      register: statspackdropcmd
+      become: true
+      become_user: "{{ oracle_user }}"
+      changed_when:
+        - '"Statspack dropped" in statspackdropcmd.stdout'
+      failed_when:
+        - statspackdropcmd.rc != 0
+      when:
+        - oracle_pdbs is defined
+        - opdb.0.statspack is defined
+        - opdb.0.statspack.state == 'absent'
+
+    - name: Output  # noqa no-handler
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      with_items:
+        - "{{ statspackdropcmd.results }}"
+      loop_control:
+        label: ""
+      when:
+        - statspackdropcmd is defined
+        - item.stdout_lines is defined
+        - item.changed
+
+- name: Create Statspack Schema in PDBs
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - spcreate
+    - statspack
+  block:
+    - name: Create Statspack Schema in PDBs
+      ansible.builtin.script: spcreate.sh
+      environment:
+        ORACLE_HOME: "{{ _oracle_home_db_pdb }}"
+        ORACLE_SID: "{{ _oracle_db_instance_name }}"
+        perfstat_password: "{{ _db_password_pdb }}"
+        temporary_tablespace: "{{ opdb.statspack.tablespace_temp | default('temp') }}"
+        default_tablespace: "{{ opdb.statspack.tablespace | default('sysaux') }}"
+        purgedates: "{{ opdb.statspack.purgedays | default(35) }}"
+        snaplevel: "{{ opdb.statspack.snaplevel | default(7) }}"
+        pdb_name: "{{ opdb.0.pdb_name }}"
+      vars:
+        # db_user is needed for _db_password_pdb to point to PERFSTAT
+        db_user: PERFSTAT
+      loop:
+        - "{{ oracle_pdbs | flatten(levels=1) }}"
+      loop_control:
+        loop_var: opdb
+        label: >-
+          {{ opdb.0.cdb | default('') }}
+          {{ opdb.0.pdb_name | default('') }}
+      register: statspackcmd
+      become: true
+      become_user: "{{ oracle_user }}"
+      changed_when:
+        - '"Installation of Statspack completed." in statspackcmd.stdout'
+      when:
+        - oracle_pdbs is defined
+        - opdb.0.cdb is defined
+        - opdb.0.state == 'present'
+        - opdb.0.statspack is defined
+        - opdb.0.statspack.state == 'present'
+        - >-
+          oracle_databases | selectattr('oracle_db_name', 'match', opdb.0.cdb)
+          | map(attribute='state') | list | first == 'present'
+
+    - name: Output
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      with_items:
+        - "{{ statspackcmd.results }}"
+      loop_control:
+        label: ""
+      when:
+        - statspackcmd is defined
+        - item.stdout_lines is defined
+        - item.changed or item.failed
+
+- name: Create/Modify Purge Job (PDB)
+  opitzconsulting.ansible_oracle.oracle_job:
+    hostname: "{{ oracle_hostname }}"
+    service_name: "{{ _db_service_pdb }}"
+    port: "{{ _listener_port_pdb }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_pdb }}"
+    mode: "{{ db_mode }}"
+    job_name: "PERFSTAT.PURGE"
+    comments: "Statspack Purge-Job"
+    job_type: "plsql_block"
+    job_action: "PERFSTAT.STATSPACK.PURGE({{ pdb.statspack.purgedays | default(purgedays) }});"
+    logging_level: "runs"
+    repeat_interval: "{{ opdb.0.statspack.purgeinterval | default(purgeinterval) }}"
+    state: "present"
+  environment: "{{ _oracle_env_pdb }}"
+  loop:
+    - "{{ oracle_pdbs | flatten(levels=1) }}"
+  loop_control:
+    loop_var: opdb
+    label: >-
+      {{ opdb.0.cdb | default('') }}
+      {{ opdb.0.pdb_name | default('') }}
+  when:
+    - oracle_pdbs is defined
+    - opdb.0.cdb is defined
+    - opdb.0.pdb_name is defined
+    - opdb.0.state == 'present'
+    - opdb.0.statspack is defined
+    - opdb.0.statspack.state == 'present'
+    - >-
+      oracle_databases | selectattr('oracle_db_name', 'match', opdb.0.cdb)
+      | map(attribute='state') | list | first == 'present'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - spjob
+    - statspack
+
+- name: Create/Modify Snapshot Job (PDB)
+  opitzconsulting.ansible_oracle.oracle_job:
+    hostname: "{{ oracle_hostname }}"
+    service_name: "{{ _db_service_pdb }}"
+    port: "{{ _listener_port_pdb }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_pdb }}"
+    mode: "{{ db_mode }}"
+    job_name: "PERFSTAT.SNAPSHOT"
+    comments: "Statspack Snapshot-Job"
+    job_type: "plsql_block"
+    job_action: "PERFSTAT.STATSPACK.SNAP(i_snap_level => {{ pdb.0.statspack.snaplevel | default(snaplevel) }});"
+    logging_level: "runs"
+    repeat_interval: "{{ opdb.0.statspack.snapinterval | default(snapinterval) }}"
+    state: "present"
+  environment: "{{ _oracle_env_pdb }}"
+  loop:
+    - "{{ oracle_pdbs | flatten(levels=1) }}"
+  loop_control:
+    loop_var: opdb
+    label: >-
+      {{ opdb.0.cdb | default('') }}
+      {{ opdb.0.pdb_name | default('') }}
+  when:
+    - oracle_pdbs is defined
+    - opdb.0.cdb is defined
+    - opdb.0.pdb_name is defined
+    - opdb.0.state == 'present'
+    - opdb.0.statspack is defined
+    - opdb.0.statspack.state == 'present'
+    - >-
+      oracle_databases | selectattr('oracle_db_name', 'match', opdb.0.cdb)
+      | map(attribute='state') | list | first == 'present'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - spjob
+    - statspack

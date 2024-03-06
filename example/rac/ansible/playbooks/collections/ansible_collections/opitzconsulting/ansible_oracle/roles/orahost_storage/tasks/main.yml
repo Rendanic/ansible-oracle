@@ -1,0 +1,81 @@
+---
+# Partition & ASM-Label Shared disks
+
+- name: ASM-storage | partition devices
+  ansible.builtin.command: parted --script {{ item.1.device }} "mklabel gpt mkpart primary 1 -1"
+  # noqa
+  args:
+    creates: "{{ item.1.device }}{{ partition_suffix }}"
+  with_subelements:
+    - "{{ asm_diskgroups }}"
+    - disk
+  when:
+    - partition_devices
+    - asm_diskgroups is defined
+    - _orasw_meta_primary_node | bool
+  tags:
+    - asmstorage
+    - partition
+
+- name: Partition disks for multipath
+  ansible.builtin.include_tasks: dm-multipath-kpartx.yml
+  when:
+    - multipath == 'dm-multipath'
+    - partition_devices
+    - asm_diskgroups is defined
+
+- name: Configure disks for device persistency
+  ansible.builtin.include_tasks: "{{ device_persistence }}.yml"
+  when:
+    - device_persistence in ('asmlib', 'udev')
+
+- name: configure dNFS
+  when:
+    - oradnfs is defined
+  block:
+    - name: dNFS-storage | Prepare mountpoints
+      ansible.builtin.file:
+        path: "{{ item.1.mount }}"
+        state: "directory"
+        owner: "root"
+        group: "root"
+        mode: 0755
+      with_subelements:
+        - "{{ oradnfs }}"
+        - exports
+
+    - name: dNFS-storage | Configure /etc/fstab and mount
+      ansible.posix.mount:
+        src: "{{ item.0.server }}:{{ item.1.export }}"
+        path: "{{ item.1.mount }}"
+        fstype: "nfs"
+        opts: "{{ item.1.fstaboptions | default('rw,bg,hard,nointr,tcp,vers=3,timeo=600,rsize=32768,wsize=32768,nolock') }}"
+        state: mounted
+      with_subelements:
+        - "{{ oradnfs }}"
+        - exports
+
+    - name: dNFS-storage | Change permission on directories
+      ansible.builtin.file:
+        path: "{{ item.1.mount }}"
+        state: directory
+        owner: "{{ oracle_user }}"
+        group: "{{ oracle_group }}"
+        mode: 0775
+      with_subelements:
+        - "{{ oradnfs }}"
+        - exports
+
+    - name: dNFS-storage | Create /etc/oranfstab for dNFS
+      ansible.builtin.blockinfile:
+        path: /etc/oranfstab
+        state: present
+        create: true
+        owner: root
+        group: root
+        mode: 0644
+        insertafter: "EOF"
+        marker: "# {mark} Ansible managed for NFS-Server: {{ item.server }}"
+        block: "{{ lookup('template', 'oranfstab.j2') }}"
+      with_items:
+        - "{{ oradnfs }}"

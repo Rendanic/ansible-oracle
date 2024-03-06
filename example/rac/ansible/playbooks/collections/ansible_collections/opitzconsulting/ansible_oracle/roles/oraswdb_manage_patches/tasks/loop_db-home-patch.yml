@@ -1,0 +1,128 @@
+---
+
+- name: Output
+  ansible.builtin.debug:
+    msg: "Managing patches for {{ oracle_home_db }}"
+  when: apply_patches_db
+
+- name: Upgrade OPatch
+  ansible.builtin.include_tasks: opatch-upgrade.yml
+
+- name: opatch lspatches
+  ansible.builtin.include_tasks: opatch_lsinv.yml
+
+- name: Configure ocm.rsp (1)
+  ansible.builtin.template:
+    src: ocmrsp.expect.j2
+    dest: "={{ oracle_patch_stage }}/{{ db_version }}/ocmrsp.expect"
+    mode: "0644"
+    force: true
+  when:
+    - apply_patches_db
+    - current_opatch_version.msg is version_compare('12.2.0.1.5', '<')
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - ocmconfig
+
+- name: Configure ocm.rsp (2)
+  ansible.builtin.command: "{{ oracle_patch_stage }}/{{ db_version }}/ocmrsp.expect"
+  when:
+    - apply_patches_db
+    - current_opatch_version.msg is version_compare('12.2.0.1.5', '<')
+  become: true
+  become_user: "{{ oracle_user }}"
+  changed_when: false
+  tags:
+    - ocmconfig
+
+- name: Remove unwanted patches from DB
+  opitzconsulting.ansible_oracle.oracle_opatch:
+    oracle_home: "{{ oracle_home_db }}"
+    patch_base: "{{ oracle_patch_install }}/{{ db_version }}/{{ item.path | default(item.patchid) }}/"
+    patch_id: "{{ item.patchid }}"
+    patch_version: "{{ item.patchversion | default(omit) }}"
+    exclude_upi: "{{ item.excludeUPI | default(omit) }}"
+    opatchauto: false
+    conflict_check: true
+    stop_processes: "{{ item.stop_processes | default(False) }}"
+    ocm_response_file: "{{ ocm_response_file | default(omit) }}"
+    output: verbose
+    state: "{{ item.state }}"
+  with_items:
+    - "{{ db_homes_config[dbh.home]['opatch'] | selectattr('state', 'match', 'absent') }}"
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - apply_patch_db
+  when:
+    - apply_patches_db | bool
+    - db_homes_config[dbh.home]['opatch'] is defined
+    - dbhome_patches.stdout_lines | select('match', item.patchid | string) | length > 0
+  register: psuapplym
+
+- name: Manage opatchauto patches for DB (non-gi)
+  opitzconsulting.ansible_oracle.oracle_opatch:
+    oracle_home: "{{ oracle_home_db }}"
+    patch_base: "{{ oracle_patch_install }}/{{ db_version }}/{{ item.0.path | default (item.0.patchid) }}/{{ item.1 }}"
+    patch_id: "{{ item.1 }}"
+    patch_version: "{{ item.1.patchversion | default(omit) }}"
+    opatchauto: false
+    conflict_check: true
+    ocm_response_file: "{{ ocm_response_file | default(omit) }}"
+    output: verbose
+    state: "{{ item.0.state }}"
+  with_subelements:
+    - "{{ db_homes_config[dbh.home]['opatchauto'] }}"
+    - subpatches
+    - flags:
+      skip_missing: true
+  # run_once: "{{ _oraswgi_meta_configure_cluster}}"
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags:
+    - apply_patch_db
+  when:
+    - apply_patches_db
+    - db_homes_config[dbh.home]['opatchauto'] is defined
+    - item.1 is defined
+    - not olrloc.stat.exists
+  register: psuapplym
+
+- name: Manage Patch from db_home_config with opatchauto
+  ansible.builtin.include_tasks: loop_patchid.yml
+  with_items:
+    - "{{ db_homes_config[dbh.home]['opatchauto'] }}"
+  loop_control:
+    loop_var: dhc_opatch
+    label: >-
+      home: {{ dbh.home | default('') }}
+      patchid: {{ dhc_opatch.patchid | default('') }}
+      state: {{ dhc_opatch.state | default('') }}
+      excludeUPI: {{ dhc_opatch.excludeUPI | default('') }}
+  when:
+    - db_homes_config[dbh.home]['opatchauto'] is defined
+    - dhc_opatch.state | default('') == 'present'
+  vars:
+    __opatchauto_patchtype: true  # opatch opatchauto
+
+# manage-patch does everything for 1 patch in a loop
+- name: Manage Patch from db_home_config with opatch
+  ansible.builtin.include_tasks: loop_patchid.yml
+  with_items:
+    - "{{ db_homes_config[dbh.home]['opatch'] }}"
+  loop_control:
+    loop_var: dhc_opatch
+    label: >-
+      home: {{ dbh.home | default('') }}
+      patchid: {{ dhc_opatch.patchid | default('') }}
+      state: {{ dhc_opatch.state | default('') }}
+      excludeUPI: {{ dhc_opatch.excludeUPI | default('') }}
+  when:
+    - db_homes_config[dbh.home]['opatch'] is defined
+    - dhc_opatch.state | default('') == 'present'
+  vars:
+    __opatchauto_patchtype: false  # opatch apply
+
+- name: opatch lspatches
+  ansible.builtin.include_tasks: opatch_lsinv.yml

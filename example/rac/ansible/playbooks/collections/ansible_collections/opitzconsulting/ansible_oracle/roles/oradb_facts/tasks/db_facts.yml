@@ -1,0 +1,40 @@
+---
+# @todo bug: parameter user, password and sysdba needs a refactoring
+- name: Gather Facts from Database
+  opitzconsulting.ansible_oracle.oracle_facts:
+    hostname: "{{ oracle_hostname }}"
+    port: "{{ _listener_port_cdb }}"
+    service_name: "{{ _db_service_name }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_cdb }}"
+    mode: sysdba
+  environment: "{{ _oracle_env }}"
+  register: dbfactsreg
+  vars:
+    # set db_user for _db_password_cdb
+    db_user: "{{ oradb_facts_db_user }}"
+
+
+# 2nd execution of oracle_factswill overwrite data of last execution.
+# => Store facts from oracle_facts in structure
+- name: Write facts to oracledb.db_unique_name
+  ansible.builtin.set_fact:
+    cacheable: true
+    oracledb_facts: "{{ oracledb_facts | default({}) | combine(_db_facts | items2dict) }}"
+  when:
+    - ansible_facts['version'] is defined
+  vars:
+    _db_facts:
+      - key: "{{ odb[0]['oracle_db_unique_name'] | default(odb[0]['oracle_db_name']) }}"
+        value:
+          version: "{{ ansible_facts['version'] }}"
+          database: "{{ ansible_facts['database'] }}"
+          instance: "{{ ansible_facts['instance'] }}"
+          pdb: "{{ ansible_facts['pdb'] }}"
+          parameter: "{{ ansible_facts['parameter'] }}"
+          rac: "{{ ansible_facts['rac'] }}"
+          redolog: "{{ ansible_facts['redolog'] }}"
+          tablespace: "{{ ansible_facts['tablespace'] }}"
+          temp_tablespace: "{{ ansible_facts['temp_tablespace'] }}"
+          userenv: "{{ ansible_facts['userenv'] }}"
+          option: "{{ ansible_facts['option'] }}"

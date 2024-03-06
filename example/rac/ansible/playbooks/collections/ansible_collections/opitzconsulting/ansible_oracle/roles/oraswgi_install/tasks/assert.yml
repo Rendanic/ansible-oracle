@@ -1,0 +1,40 @@
+---
+- name: Oraswgi_install | Assert variables
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - default_gipass | length > 0
+      - oracle_install_version_gi is defined
+      - oracle_gi_cluster_type in ('STANDARD', 'STANDALONE')
+  tags: always
+
+# RAC is not supported at the moment!
+- name: Oraswgi_install | Assert oracle_install_option_gi
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - oracle_install_option_gi in ('HA_CONFIG', 'CRS_CONFIG')
+  tags: always
+
+- name: Oraswgi_install | Assert role_separation
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - (role_separation and grid_user != oracle_user)
+        or
+        not role_separation
+    fail_msg: >-
+      Role separation is enabled.
+      Different values for grid_user={{ grid_user }}
+      and oracle_user={{ _grid_install_user }} needed.
+  tags: always
+
+- name: Oraswgi_install | Assert Grid-Infrastructure variables
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - oracle_scan is defined
+      - oracle_vip is defined
+  when:
+    - oracle_install_option_gi == 'CRS_CONFIG'
+  tags: always

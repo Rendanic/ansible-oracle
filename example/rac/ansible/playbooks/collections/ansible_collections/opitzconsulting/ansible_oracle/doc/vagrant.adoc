@@ -1,0 +1,216 @@
+:toc:
+:toc-placement!:
+:toclevels: 4
+toc::[]
+
+:sectnums:
+:sectnumlevels: 4
+
+== Overview
+
+IMPORTANT: This documentation describes the installation of the required tools for ansible-oracle on a Windows based hostsystem.
+
+:puml: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/oravirt/ansible-oracle/master/doc
+
+image::{puml}/chocolatey.puml[chocolatey]
+
+* Requirements
+** Intel/AMD x86 CPU is mandatory +
+no support for Mac with M1
+** 16 GB RAM
+** 150 GB free Disk space +
+The free space is needed in your home directory in Windows.
+** Admin priviledges on Host machine
+** Hyper-V disabled
+** no WSL/WSL2 for installation +
+While you may try it, the documentation states that Hyper-V should be completely disabled and that no WSL/WSL2 is used.
+
+WARNING: There are many issues when Hyper-V is active on the host machine. +
+Please switch Hyper-V off completely, before starting the boxes with Vagrant. +
+If you do find a really good working solution with Vagrant + VirtualBox and Hyper-V, feedback is welcome.
+
+== Installation
+
+=== Disable Hyper-V in Windows
+
+WARNING: There are numerous problems with Vagrant & VirtualBox when Hyper-V is enabled. +
+It is therefore recommended to disable it for `ansible-oracle`.
+
+IMPORTANT: All commands require a cmd.exe with admin rights.
+
+.Check setting of Hyper-V
+----
+bcdedit
+----
+
+The output should contain a line with `hypervisorlaunchtype`. +
+If the line is not shown or `Off`, Hyper-V is completely disabled.
+
+.Output
+[quote,output from bcdedit]
+----
+# bcdedit
+
+Windows-Start-Manager
+---------------------
+...
+
+Windows-Startladeprogramm
+-------------------------
+...
+hypervisorlaunchtype    Off
+----
+
+If it is `Auto` or `On`
+
+.Disable Hyper-V with immediate reboot
+----
+bcdedit /set {current} hypervisorlaunchtype off
+shutdown -r -t 0
+----
+
+
+=== Chocolatey
+
+IMPORTANT: The installation of Chocolatey is not mandatory for `ansible-oracle`. +
+All tools could be installed manually. Please ensure, that they are all executable from `git+bash`. +
+*It is highly recommended to use Chocolatey with `ansible-oracle`.*
+
+IMPORTANT: See the link:https://chocolatey.org/install[Homepage of chocolatey] for more details.
+
+.Execute in PowerShell with Admin rights
+----
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+----
+
+=== git+bash, VirutalBox and Vagrant
+
+.Execute in cmd.exe with admin rights
+----
+choco install git vagrant virtualbox
+----
+
+=== ConEmu - Handy Windows Terminal
+
+IMPORTANT: This step is optional.
+
+This is a really good alternative terminal to `cmd.exe` for windows. +
+It is not recommended for `ansible-oracle` but you should give it a try and enjoy it - especially when VSCode is not used.
+
+link:https://conemu.github.io[Homepage of ConEmu]
+
+.Execute in cmd.exe with admin rights
+----
+choco install conemu
+----
+
+=== Visual Studio Code
+
+IMPORTANT: This step is optional. +
+You should use VSCode - especially when _Advanced_ or _Expert_ setups are planned for a later time.
+
+link:https://code.visualstudio.com:[Homepage for Visual Studio Code]
+
+.Execute in cmd.exe with admin rights
+----
+choco install vscode.install
+----
+
+== Configuration
+
+=== SSH-Setup
+
+WARNING: The example expects the private key at the default location.
+
+IMPORTANT: Create a custom key and place the public key in same directory as the Vagrantfile.
+Do _not_ use the created keys from Vagrant. +
+You should _always_ use the `ssh-agent` to connect to all machines.
+
+IMPORTANT: All commands are executed in `git+bash` on the Host machine - _not_ inside a VM!
+
+.Create a key when needed
+----
+ssh-keygen
+----
+
+.Output
+[quote, output of ssh-keygen]
+----
+ssh-keygen
+
+Generating public/private rsa key pair.
+
+Enter file in which to save the key (/c/Users/User/.ssh/id_rsa): Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /c/Users/User/.ssh/id_rsa
+Your public key has been saved in /c/Users/User/.ssh/id_rsa.pub
+The key fingerprint is:
+SHA256:Xq9EGKMUEXFkxeli4NilfvwEkOAmvkV1PiRteA+NQRQ ubuntu@ansible-oracle-bastion
+----
+
+IMPORTANT: Enable Agent Forwarding for all SSH-Sessions. +
+This is *mandatory* for Visual Studio Code.
+
+.Enable Agent Forwarding for all SSH-Sessions.
+----
+code ~/.ssh/config
+
+Host *
+  ForwardAgent yes
+----
+
+.Start a ssh-agent (bash)
+----
+eval $(ssh-agent)
+----
+
+.Output
+[quote, output of ssh-keygen]
+----
+eval $(ssh-agent)
+Agent pid 16840
+----
+
+.Import a key
+----
+ssh-add ~/.ssh/id_rsa
+----
+
+.Output
+[quote, output of ssh-keygen]
+----
+$ ssh-add ~/.ssh/id_rsa
+Identity added: /c/Users/User/.ssh/id_rsa (User@unknown)
+----
+
+.Show imported keys
+----
+ssh-add -l
+----
+
+.Output
+[quote, output of ssh-keygen]
+----
+ssh-add -l
+2048 SHA256:EsVIFzfCLUDTO2cMTf4q4qt2Eu0w1pA2sdcXxh9jyBs User@unknown (RSA)
+----
+
+=== Vagrant SSH-Setup
+
+IMPORTANT: The Vagrantfile has a provisioner script block which copy a stored `id_rsa.pub` into `authorized_keys` on the target machine.
+
+The exact command to copy the key is shown during the deployment description.
+
+=== Vagrant Plugins
+
+The following modules are used by the tutorial examples.
+
+* install* vagrant-disksize +
+This is an experimental plugin which is needed to resize the 1. disk of a vagrant box. +
+----
+vagrant plugin install vagrant-disksize
+----
+
+
+== See also
+* link:vagrant_basics.md[Basic command and setup of Vagrant]: Preparation for beginner

@@ -1,0 +1,60 @@
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^roles/.*/README.md
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-symlinks
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: forbid-new-submodules
+      - id: check-executables-have-shebangs
+      - id: no-commit-to-branch
+
+  - repo: https://github.com/python/black.git
+    rev: 23.10.1
+    hooks:
+      - id: black
+        # language_version: python3
+        # files: plugins/modules/*.py
+        files: ^plugins/modules/.*\.py$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: '6.1.0'
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/syntaqx/git-hooks
+    rev: v0.0.18
+    hooks:
+      - id: shellcheck
+      # - id: shfmt
+
+  - repo: https://github.com/ansible-community/antsibull-changelog.git
+    rev: 0.23.0
+    hooks:
+      - id: antsibull-changelog-lint
+
+  - repo: https://github.com/thegeeklab/ansible-doctor
+    rev: v4.0.1
+    hooks:
+      - id: ansible-doctor
+        entry: ansible-doctor --force --no-role-detection --recursive roles
+        additional_dependencies:
+          - ansible-core
+
+  - repo: https://github.com/ansible-community/ansible-lint.git
+    rev: v6.22.1
+    hooks:
+      - id: ansible-lint
+        entry: ansible-lint --force-color -p
+        files: \.(yaml|yml)$
+        pass_filenames: false
+        always_run: true
+        verbose: true

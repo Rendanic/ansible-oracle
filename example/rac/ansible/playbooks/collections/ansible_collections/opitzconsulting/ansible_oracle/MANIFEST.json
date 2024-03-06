@@ -1,0 +1,39 @@
+{
+ "collection_info": {
+  "namespace": "opitzconsulting",
+  "name": "ansible_oracle",
+  "version": "4.5.1",
+  "authors": [
+   "Mikael Sandstr\u00f6m",
+   "OPITZ CONSULTING",
+   "Thorsten Bruhns"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "database",
+   "infrastructure",
+   "oracle"
+  ],
+  "description": "Impoartant! This is a beta release! This is the collection of ansible-oracle from https://github.com/oravirt/ansible-oracle",
+  "license": [
+   "MIT"
+  ],
+  "license_file": null,
+  "dependencies": {
+   "community.general": ">=7.0.0",
+   "devsec.hardening": "8.6.0"
+  },
+  "repository": "https://github.com/oravirt/ansible-oracle.git",
+  "documentation": null,
+  "homepage": null,
+  "issues": null
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "645bff6b9dcd6cf3cc01650456c678db27bee8d383998628873eb2bbbedc1182",
+  "format": 1
+ },
+ "format": 1
+}

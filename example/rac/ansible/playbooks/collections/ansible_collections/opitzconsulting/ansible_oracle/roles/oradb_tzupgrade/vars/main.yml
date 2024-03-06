@@ -1,0 +1,5 @@
+---
+_oradb_tzupgrade_tz_check_query: >-
+  SELECT decode(property_value, dbms_dst.get_latest_timezone_version, 1, 0) status
+  FROM database_properties
+  WHERE  property_name LIKE 'DST_PRIMARY_TT_VERSION'

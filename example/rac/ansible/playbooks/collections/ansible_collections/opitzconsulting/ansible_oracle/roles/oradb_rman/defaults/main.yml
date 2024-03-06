@@ -1,0 +1,79 @@
+---
+# @var oradb_rman_cron_logdir:description: >
+# Lgofiledirectory for output of cronjobs.
+# @end
+oradb_rman_cron_logdir: "{{ rman_cron_logdir | default('/var/log/oracle/rman/log') }}"
+
+# @var oradb_rman_cron_mkjob:description: >
+# Add mk-job to all cronjobs in `/etc/cron.d` for RMAN backups.
+#
+# This is only needed when RMAN backups are monitored by checkmk.
+# @end
+oradb_rman_cron_mkjob: "{{ rman_cron_mkjob | default(false) }}"
+
+# @var oradb_rman_cronfile:description: >
+# Name for file for crontab in /etc/cron.d
+# @end
+oradb_rman_cronfile: oracle_rman_ansible
+
+# @var oradb_rman_script_dir:description: >
+# Directory for `*.rman`-Files.
+# @end
+oradb_rman_script_dir: "{{ rman_script_dir | default(odb.0.rman_script_dir | default(oracle_base + '/rman')) }}"
+
+# @var oradb_rman_log_dir:description: >
+# Lgofiledirectory for `rman_wrapper.sh`.
+# @end
+oradb_rman_log_dir: "{{ rman_log_dir | default(odb.0.rman_log_dir | default(oracle_base + '/rman/log')) }}"
+
+# @var oradb_rman_tns_admin:description: >
+# TNS_ADMIN for `rman_wrapper.sh`.
+# This is needed for RMAN-Catalogconnections.
+# @end
+oradb_rman_tns_admin: "{{ rman_tns_admin | default(oracle_base + '/rman/network/admin') }}"
+
+# @var oradb_rman_wallet_loc:description: >
+# Directory for Oracle wallet.
+# @end
+oradb_rman_wallet_loc: "{{ rman_wallet_loc | default(oracle_base + '/rman/network/wallet') }}"
+
+# @var oradb_rman_wallet_password:description: >
+# Password for Orale wallet.
+# @end
+oradb_rman_wallet_password: "{{ rman_wallet_password | default('oracleWallet1') }}"
+
+# @var oradb_rman_autofs:description: >
+# Configure autofs for RMAN Backups?
+# @end
+oradb_rman_autofs: "{{ rmanautofs | default(false) }}"
+
+# @var oradb_rman_retention_policy_default:description: >
+# Defines the policy for the RMAN-Templates from role.
+# @end
+oradb_rman_retention_policy_default: "{{ rman_retention_policy_default | default('RECOVERY WINDOW OF 14 DAYS') }}"
+
+# @var oradb_rman_channel_disk_default:description: >
+# Defines the format for disk target in RMAN-Templates from role.
+# @end
+oradb_rman_channel_disk_default: >-
+  {% set __channel_disk_default = "'/u10/rmanbackup/%d/%d_%T_%U'" -%}
+  {{ rman_channel_disk_default | default(__channel_disk_default) -}}
+
+# @var oradb_rman_controlfile_autobackup_disk_default:description: >
+# Defines the contolfile autobackup target directory for the RMAN-Templates from role.
+# @end
+oradb_rman_controlfile_autobackup_disk_default: >-
+  {% set __autobackup_disk_default = "'/u10/rmanbackup/%d/%d_%F'" -%}
+  {{ rman_controlfile_autobackup_disk_default | default(__autobackup_disk_default) -}}
+
+# @var oradb_rman_tnsnames_installed:description: >
+# Defines custom entries in tnsnames.ora in `oradb_rman_tns_admin`.
+#
+# Format is same as `tnsnames_installed`.
+# @end
+# @var oradb_rman_tnsnames_installed:example: >
+# oradb_rman_tnsnames_installed:
+#   - home: db19-si-ee
+#     tnsname: orclpdb
+#     state: present
+# @end

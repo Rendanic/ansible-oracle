@@ -1,0 +1,24 @@
+---
+use_default_rules: true
+
+# profile: production
+
+skip_list:
+  # ansible-oracle has lot of internal used variables...
+  - var-naming[no-role-prefix]
+  - name[casing]
+  - meta-runtime[unsupported-version]
+
+exclude_paths:
+  - .github
+  - dbhome-conversion
+  - docker
+  - plugins/modules
+  - playbooks/desupported
+  - changelogs
+  - roles/oraemagent_install  # deprecated role
+  - example/*/ansible/playbooks/collections/ansible_collections
+  - playbooks/collections/ansible_collections
+
+extra_vars:
+  hostgroup: all

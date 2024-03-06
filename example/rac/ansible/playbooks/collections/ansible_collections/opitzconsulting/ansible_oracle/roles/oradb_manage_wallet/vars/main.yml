@@ -1,0 +1,9 @@
+---
+_oradb_manage_wallet_password: >-
+  {{ oracle_wallet_password[owc.name] }}
+
+_oradb_manage_wallet_dbpassword_loopvar: >-
+  {{ owc_dbc.1 | default(owc_d) }}
+
+_oradb_manage_wallet_dbpassword: >-
+  {{ dbpasswords[owc_d.db_name][owc_d.db_user] | default(default_dbpass) }}

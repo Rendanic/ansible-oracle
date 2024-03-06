@@ -1,0 +1,24 @@
+---
+- name: Disable Transparent Hugepages (runtime)
+  ansible.builtin.shell: if test -f {{ item.path }}; then {{ item.disable }} {{ item.path }}; fi;
+  # noqa no-changed-when
+  with_items:
+    - "{{ transparent_hugepage_disable }}"
+  tags: tphnuma,molecule-idempotence-notest
+
+- name: Disable Transparent Hugepages (permanently)
+  ansible.builtin.lineinfile:
+    dest: "{{ item.rclocal }}"
+    line: "{{ item.disable }} {{ item.path }}"
+    state: present
+  with_items:
+    - "{{ transparent_hugepage_disable }}"
+  tags: tphnuma,molecule-idempotence-notest
+
+- name: Fix permissions on /etc/rc.d/rc.local
+  ansible.builtin.file:
+    path: "{{ item.rclocal }}"
+    mode: "0755"
+  with_items:
+    - "{{ transparent_hugepage_disable }}"
+  tags: tphnuma

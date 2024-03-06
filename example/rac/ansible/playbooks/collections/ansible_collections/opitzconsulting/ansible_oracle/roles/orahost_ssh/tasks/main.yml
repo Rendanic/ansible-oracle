@@ -1,0 +1,20 @@
+---
+- name: Deploy SSH-Keys on Cluster
+  when:
+    - _oraswgi_meta_configure_cluster | default(false)
+    - inventory_hostname in groups[orasw_meta_cluster_hostgroup]
+  block:
+    - name: SSH-Keys for {{ oracle_user }}
+      ansible.builtin.include_tasks: loop_osuser.yml
+      vars:
+        _key_owner_home: "{{ oracle_user_home }}"
+        _key_owner: "{{ oracle_user }}"
+
+    - name: SSH-Keys for {{ _grid_install_user }}
+      ansible.builtin.include_tasks: loop_osuser.yml
+      vars:
+        _key_owner_home: "{{ grid_user_home }}"
+        _key_owner: "{{ _grid_install_user }}"
+      when:
+        - role_separation | bool
+        - oracle_user != _grid_install_user

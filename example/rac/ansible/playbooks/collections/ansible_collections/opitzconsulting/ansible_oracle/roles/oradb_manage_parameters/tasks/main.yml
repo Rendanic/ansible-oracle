@@ -1,0 +1,111 @@
+---
+# @tag initparams:description: Configure parameter for nonCDB, CDB and PDB
+# @tag initparams_cdb:description: Configure parameter for nonCDB and CDB
+- name: Manage parameters (db/cdb)
+  opitzconsulting.ansible_oracle.oracle_parameter:
+    hostname: "{{ oracle_hostname }}"
+    port: "{{ _listener_port_cdb }}"
+    service_name: "{{ _db_service_name }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_cdb }}"
+    mode: "{{ db_mode }}"
+    name: "{{ odb.1.name }}"
+    value: "{{ odb.1.value }}"
+    state: "{{ odb.1.state }}"
+    scope: "{{ odb.1.scope | default ('both') }}"
+  environment: "{{ _oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_databases }}"
+    - init_parameters
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_databases is defined
+    - odb.0.state == 'present'
+    - odb.1 is defined
+  become: true
+  become_user: "{{ oracle_user }}"
+  loop_control:
+    loop_var: odb
+    label: >-
+      port: {{ _listener_port_cdb }}
+      service: {{ _db_service_name }}
+      name: {{ odb.1.name }}
+      value: {{ odb.1.value }}
+      scope: {{ odb.1.scope | default ('both') }}
+      state:{{ odb.1.state }}
+  register: param_change_cdb
+  tags:
+    - initparams
+    - initparams_cdb
+
+# @tag initparams_pdb:description: Configure parameter for PDB
+- name: Manage parameters (pdb)
+  opitzconsulting.ansible_oracle.oracle_parameter:
+    hostname: "{{ oracle_hostname }}"
+    service_name: "{{ _db_service_pdb }}"
+    port: "{{ _listener_port_pdb }}"
+    user: "{{ db_user }}"
+    password: "{{ _db_password_pdb }}"
+    mode: "{{ db_mode }}"
+    name: "{{ opdb.1.name }}"
+    value: "{{ opdb.1.value }}"
+    state: "{{ opdb.1.state }}"
+    scope: "{{ opdb.1.scope | default ('both') }}"
+  environment: "{{ _oracle_env_pdb }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_pdbs }}"
+    - init_parameters
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_pdbs is defined
+    - opdb.0.state == 'present'
+    - opdb.1 is defined
+    - >-
+      oracle_databases | selectattr('oracle_db_name', 'match', opdb.0.cdb)
+      | map(attribute='state') | list | first == 'present'
+  become: true
+  become_user: "{{ oracle_user }}"
+  loop_control:
+    loop_var: opdb
+    label: >-
+      port: {{ _listener_port_pdb }}
+      service: {{ opdb.0.pdb_name }}
+      name: {{ opdb.1.name }}
+      value: {{ opdb.1.value }}
+      scope: {{ opdb.1.scope | default ('both') }}
+      state:{{ opdb.1.state }}"
+  register: param_change_pdb
+  tags:
+    - initparams
+    - initparams_pdb
+
+# @tag spfile_bounce:description: Bounce database when changed parameter need a restart.
+- name: Bounce database to activate changed parameters with scope=spfile
+  opitzconsulting.ansible_oracle.oracle_db:
+    oracle_home: "{{ _oracle_home_db }}"
+    db_name: "{{ odb.0.oracle_db_name }}"
+    db_unique_name: "{{ odb.0.oracle_db_unique_name | default(omit) }}"
+    sys_password: "{{ _db_password_cdb }}"
+    sid: "{{ _oracle_db_instance_name | default(omit) }}"
+    state: "restarted"
+    force_restart: false
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_nested:
+    - "{{ oracle_databases }}"
+    - ""  # dummy to force odb.0 instead of item.
+  when:
+    - odb.0.restart_spparameter_changed | default(true)
+    - restart_spparameter_changed
+  loop_control:
+    loop_var: odb
+    label: >-
+      dbname: {{ odb.0.oracle_db_name | d('') }}
+      - {{ param_change_reboot.msg | default('restart_spparameter_changed is false') }}"
+  become: true
+  become_user: "{{ oracle_user }}"
+  register: param_change_reboot
+  tags: spfile_bounce

@@ -1,0 +1,12 @@
+---
+- name: oradb_tzupgrade | Loop over oracle_databases
+  ansible.builtin.include_tasks: >-
+    {{ odb.is_container | default(false) | ternary('cdb', 'non_cdb') }}.yml
+  with_items:
+    - "{{ oracle_databases }}"
+  when: odb.state | lower == 'present'
+  loop_control:
+    label: >-
+      home: {{ odb.home }}
+      db_name: {{ odb.oracle_db_name }}
+    loop_var: odb

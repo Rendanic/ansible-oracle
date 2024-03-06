@@ -1,0 +1,427 @@
+---
+
+disable_selinux: true
+disable_firewall: true
+
+
+# @todo improvement: SSH-Setup needs a rework...
+old_ssh_config: true
+
+ssh_keys:
+  - /tmp/id_rsa
+  - /tmp/id_rsa.pub
+  - /tmp/authorized_keys
+keyfile: /tmp/known_hosts
+
+# @var configure_ssh:description: >
+# Should passwordless ssh be configured between clusternodes. Only applicable to RAC-installs
+# @end
+configure_ssh: false
+
+# @var configure_limits_pam:description: >
+# Configure `/etc/pam.d/limits`?
+# @end
+configure_limits_pam: true
+
+# @var configure_limits:description: >
+# Configure `/etc/security.d/limits.d/99-oracle-limits.conf`?
+# @end
+configure_limits: true
+
+# @var configure_etc_hosts:description: >
+# Add `{{ ansible_hostname }} {{ ansible_fqdn }}` to /etc/hosts`?
+# @end
+configure_etc_hosts: false
+
+# @var configure_interconnect:description: >
+# Should the Interconnect network be configured by Ansible
+# @end
+configure_interconnect: false
+
+# @var configure_oracle_sudo:description: Add oracle to sudoers for root.
+configure_oracle_sudo: false
+
+# @var configure_hugepages:description: Configure Hugepages?
+configure_hugepages: true
+
+# @var configure_hugepages_by:description: >
+# Defines if percent_hugepages or size_in_gb_hugepages is used to define the Hugepages.
+# Allowed values: percentage or memory.
+# @end
+# @var configure_hugepages_by:example: >
+# configure_hugepages_by: memory
+#
+# configure_hugepages_by: percentage
+# @end
+configure_hugepages_by: memory
+
+# @var percent_hugepages:description: >
+# Define percentage from RAM for Hugepages. Only valud when configure_hugepages_by: percentage
+# @end
+percent_hugepages: 50
+
+# @var size_in_gb_hugepages:description: >
+# Size in GB for Hugepages. Only valud when configure_hugepages_by: memory
+# @end
+size_in_gb_hugepages: 1
+
+# @var nr_hugepages_percent:description: This is an internal variable only. Do not define it!
+# @var nr_hugepages_percent: $ "_unset_"
+nr_hugepages_percent: "{{ ((((percent_hugepages / 100) * ansible_memtotal_mb) / 2) + 2) | round | int }}"
+
+# @var nr_hugepages_memory:description: This is an internal variable only. Do not define it!
+# @var nr_hugepages_memory: $ "_unset_"
+nr_hugepages_memory: "{{ (((size_in_gb_hugepages * 1024) / 2) + 2) | round | int }}"
+
+# @var nr_hugepages:description: >
+# This is an internal variable only. Do not define it!
+# @end
+# @var nr_hugepages: $ "_unset_"
+nr_hugepages: "{% if configure_hugepages %}\
+                 {%- if configure_hugepages_by | lower == 'percentage' %}{{ nr_hugepages_percent }}\
+                 {%- elif configure_hugepages_by | lower == 'memory' %}{{ nr_hugepages_memory }}\
+                 {%- endif %}\
+                 {%- else %}0\
+               {%- endif %}"
+
+# @var os_family_supported:description: Support is limited to RHE/OL and SuSE
+os_family_supported: "{% if ansible_os_family == 'Suse' %}Suse{% else %}RedHat{% endif %}"
+
+# @var os_min_supported_version:description: >
+# Minimum supported versions for SLES is 12.1 and RHEL/OL >= 6.4
+# @end
+os_min_supported_version: "{% if ansible_os_family == 'Suse' %}12.1{% else %}6.4{% endif %}"
+
+# @var oracle_groups:description: >
+# List of OS-groups for Oracle
+# Dependent variables are defined in orahost_meta/defaults/main.yml
+# @end
+oracle_groups:
+  - {group: "{{ asmdba_group }}", gid: 54318}
+  - {group: "{{ asmoper_group }}", gid: 54319}
+  - {group: "{{ asmadmin_group }}", gid: 54320}
+  - {group: "{{ oracle_group }}", gid: 54321}
+  - {group: "{{ dba_group }}", gid: 54322}
+  - {group: "{{ oper_group }}", gid: 54324}
+  - {group: backupdba, gid: 54323}
+  - {group: dgdba, gid: 54325}
+  - {group: kmdba, gid: 54326}
+
+# @var oracle_users:description: oracle OS-User
+oracle_users:         # Passwd :Oracle123
+  - username: oracle
+    uid: 54321
+    primgroup: "{{ oracle_group }}"
+    othergroups: "{{ dba_group }},{{ asmadmin_group }},{{ asmdba_group }},{{ asmoper_group }},backupdba,dgdba,kmdba,{{ oper_group }}"
+
+# @var grid_users:description: grid OS-User
+grid_users:
+  - username: grid
+    uid: 54320
+    primgroup: "{{ oracle_group }}"
+    othergroups: "{{ asmadmin_group }},{{ asmdba_group }},{{ asmoper_group }},{{ dba_group }}"
+
+# @var firewall_service:description: >
+# Used firewall service in OS. Value depends on used Distribution and version.
+# @end
+# @var firewall_service: $ "firewalld or iptables"
+firewall_service: "{% if ansible_distribution_major_version | int == 6 -%}iptables\
+                   {%- elif ansible_distribution_major_version | int == 7 -%}firewalld\
+                   {%- else %}0{% endif %}"
+
+# @var sudoers_template:description: >
+# Used ansible template for sudoers configuration.
+# @end
+sudoers_template: sudoers.j2
+
+# @var etc_hosts_ip:description: >
+# Set IP to 2nd Interface on virtualbox and 1st for all otehr installations
+# @end
+etc_hosts_ip: "{% if 'virtualbox' in ansible_virtualization_type %}{{ ansible_all_ipv4_addresses[1] }}{% else %}{{ ansible_default_ipv4.address }}{% endif %}"
+
+# Extra repositories that should be enabled
+extrarepos_enabled: "{%- if ansible_distribution == 'OracleLinux' -%}\
+                          ol{{ ansible_distribution_major_version }}_addons\
+                     {%- else -%}\
+                     {%- endif %}"
+
+# @var extrarepos_disabled:description: List of disabled yum repos during installation for RHEL/OL.
+# @var extrarepos_disabled: $ "[]"
+extrarepos_disabled: []
+
+# @var asmlib_rpm:description: >
+# Install oracleasm-support from RPM-Repo on OracleLinux.
+# Value depends on OS-Release from RHEL/OL.
+# Uses variables `asmlib_rpm_el6`, `asmlib_rpm_el7` or `asmlib_rpm_el8`
+# @end
+# @var asmlib_rpm: $ "Value from `asmlib_rpm_el6`, `asmlib_rpm_el7` or `asmlib_rpm_el8`"
+asmlib_rpm: "{%- if ansible_distribution_major_version | int == 6 %}\
+               {{ asmlib_rpm_el6 }}\
+             {%- elif ansible_distribution_major_version | int == 7 %}\
+               {{ asmlib_rpm_el7 }}\
+             {%- elif ansible_distribution_major_version | int == 8 %}\
+               {{ asmlib_rpm_el8 }}\
+             {%- else %}\
+               None\
+             {%- endif %}"
+
+# @var asmlibsupport_rpm:description: >
+# Install oracleasmlib-support from RPM-Repo on OracleLinux.
+# Value depends on OS-Release from RHEL/OL.
+#
+# important
+#
+# Do NOT set this variable.
+#
+# Set the used variables `asmlibsupport_rpm_el6`, `asmlibsupport_rpm_el7` or `asmlibsupport_rpm_el8`.
+# @end
+# @var asmlibsupport_rpm: $ "Value from `asmlibsupport_rpm_el6`, `asmlibsupport_rpm_el7` or `asmlibsupport_rpm_el8`"
+asmlibsupport_rpm: "{%- if ansible_distribution == 'OracleLinux' -%}\
+                      oracleasm-support\
+                    {%- else -%}\
+                      {%- if ansible_distribution_major_version | int == 6 -%}\
+                        {{ asmlibsupport_rpm_el6 }}\
+                      {%- elif ansible_distribution_major_version | int == 7 -%}\
+                        {{ asmlibsupport_rpm_el7 }}\
+                      {%- elif ansible_distribution_major_version | int == 8 -%}\
+                        {{ asmlibsupport_rpm_el8 }}\
+                      {%- else -%}\
+                        oracleasm-support\
+                      {%- endif -%}\
+                    {%- endif -%}"
+
+# @var asmlib_rpm_el6:description: Name / Url for rpm oracleasm-support for RHEL6/OL6.
+asmlib_rpm_el6: "http://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.4-1.el6.x86_64.rpm"
+
+# @var asmlib_rpm_el7:description: Name / Url for rpm oracleasm-support for RHEL7/OL7.
+asmlib_rpm_el7: "http://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.12-1.el7.x86_64.rpm"
+
+# @var asmlib_rpm_el8:description: Name / Url for rpm oracleasm-support for RHEL8/OL8.
+asmlib_rpm_el8: "https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.17-1.el8.x86_64.rpm"
+
+# @var asmlib_rpm_sles:description: Name / Url for rpm oracleasm-support for SLES.
+asmlib_rpm_sles: "http://oss.oracle.com/projects/oracleasm-support/dist/files/RPMS/sles12/amd64/2.1.8/oracleasm-support-2.1.8-1.SLE12.x86_64.rpm"
+
+asmlibsupport_rpm_el6: "http://oss.oracle.com/projects/oracleasm-support/dist/files/RPMS/rhel6/amd64/2.1.8/oracleasm-support-2.1.8-1.el6.x86_64.rpm"
+
+asmlibsupport_rpm_el7: "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/oracleasm-support-2.1.11-2.el7.x86_64.rpm"
+
+asmlibsupport_rpm_el8: "https://yum.oracle.com/repo/OracleLinux/OL8/latest/x86_64/getPackage/oracleasm-support-2.1.11-2.el8.x86_64.rpm"
+
+# @var disable_numa_boot:description: >
+# Disable numa support during boot.
+# @end
+disable_numa_boot: true
+
+# @var oracle_ic_net:description: >
+# Picks the last octet from the public ip to use for
+# cluster-interconnect ip (e.g 3.3.3.51)
+# @end
+oracle_ic_net: 3.3.3.{{ ansible_all_ipv4_addresses[0].split(".")[-1] }}
+
+# @var transparent_hugepage_disable:description: >
+# Disable Transparent Hugepages during boot.
+#
+# _Important_
+#
+# It is strongly recommended to disable Transparent Hugepages. Do not change this variable.
+# @end
+transparent_hugepage_disable:
+  - {disable: "echo never >", path: /sys/kernel/mm/transparent_hugepage/enabled, rclocal: /etc/rc.d/rc.local}
+  - {disable: "echo never >", path: /sys/kernel/mm/transparent_hugepage/defrag, rclocal: /etc/rc.d/rc.local}
+
+# @var host_fs_layout:description: >
+# Define physical Disk, Volume Group, logical Volume, Filesystem and swap Devices.
+# See example configuration
+# @end
+# @var host_fs_layout: $ "[]"
+# @var host_fs_layout:example: >
+# host_fs_layout:
+#   - vgname: vgora
+#     state: present
+#     filesystem:
+#       - { mntp: /u01, lvname: lvorabase, lvsize: 25G, fstype: xfs }
+#       - { mntp: /u02, lvname: lvoradata, lvsize: 25G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1" }
+#     disk:
+#       - { device: /dev/sdb, pvname: /dev/sdb1 }
+# @end
+
+# @var install_os_packages:description: >
+# Install addional RPMs for Oracle?
+# @end
+install_os_packages: true
+
+# @var oracle_packages:description: >
+# List of additinal RPMs for RHEL/OL.
+#
+# `install_os_packages: true` is needed to install the RPMs.
+# @end
+oracle_packages:
+  - bind-utils
+  - nfs-utils
+  - util-linux-ng
+  - xorg-x11-utils
+  - xorg-x11-xauth
+  - binutils
+  - compat-libstdc++-33
+  - compat-libstdc++-33.i686
+  - unixODBC-devel
+  - unixODBC-devel.i686
+  - gcc
+  - gcc-c++
+  - glibc
+  - glibc.i686
+  - glibc-devel
+  - glibc-devel.i686
+  - libaio
+  - libaio-devel
+  - libaio.i686
+  - libaio-devel.i686
+  - libgcc
+  - libgcc.i686
+  - libstdc++
+  - libstdc++-devel
+  - libstdc++.i686
+  - libstdc++-devel.i686
+  - libXext
+  - libXext.i686
+  - zlib-devel
+  - zlib-devel.i686
+  - make
+  - sysstat
+  - openssh-clients
+  - compat-libcap1
+  - xorg-x11-xauth
+  - xorg-x11-xinit
+  - libXtst
+  - xdpyinfo
+  - xterm
+  - xsetroot
+  - libXp
+  - libXt
+  - libXau
+  - libXau.i686
+  - libXi
+  - libXi.i686
+  - libX11
+  - libX11.i686
+  - smartmontools
+  - elfutils-libelf-devel.i686
+  - elfutils-libelf-devel
+  - cpp
+  - lsof
+
+# @var oracle_packages_sles_multi:description: >
+# List of additinal RPMs for different SLES version.
+#
+# List is based on: https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/database-installation-guide-linux.pdf
+#
+# `install_os_packages: true` is needed to install the RPMs.
+# @end
+oracle_packages_sles_multi:
+  - name: SLES common packages
+    condition: true
+    packages:
+      - bc
+      - binutils
+      - glibc
+      - glibc-devel
+      - libaio-devel
+      - libaio1
+      - libcap-ng-utils
+      - libcap-ng0
+      - libcap-progs
+      - libcap2
+      - libgcc_s1
+      - libpcap1
+      - libpcre1
+      - libpcre16-0
+      - libpng16-16
+      - libstdc++6
+      - libtiff5
+      - libXau6
+      - libXrender1
+      - libXtst6
+      - make
+      - mksh
+      - pixz
+      - rdma-core
+      - rdma-core-devel
+      - smartmontools
+      - sysstat
+      - xorg-x11-libs
+      - xz
+  - name: SLES 12 packages
+    condition: "{{ ansible_distribution_major_version == '12' }}"
+    packages:
+      - libcap1
+      - libelf-devel
+      - libjpeg-turbo
+      - libjpeg62
+      - libjpeg62-turbo
+      - libX11
+  - name: SLES 15 packages
+    condition: "{{ ansible_distribution_major_version == '15' }}"
+    packages:
+      - insserv-compat
+      - libelf1
+      - libgfortran4
+      - libjpeg8
+      - libX11-6
+      - libXext-devel
+      - libXext6
+      - libXi-devel
+      - libXi6
+      - libXrender-devel
+  - name: "SLES 15 SP3+ extra packages"
+    condition: "{{ ansible_distribution_version is version('15.3', 'ge') }}"
+    packages:
+      - compat-libpthread-nonshared  # only difference to 15.2 yet required - https://www.suse.com/releasenotes/x86_64/SUSE-SLES/15-SP3/index.html
+
+# @var oracle_asm_packages:description: >
+# List of RPMs installed during ASM preparation for RHEL/OL.
+#
+# There should be no reason to change this variable.
+# @end
+oracle_asm_packages:
+  - "{{ asmlib_rpm }}"
+  - "{{ asmlibsupport_rpm }}"
+  - kmod-oracleasm
+
+# @var oracle_asm_packages_sles:description: >
+# List of RPMs installed during ASM preparation for SLES.
+#
+# There should be no reason to change this variable.
+# @end
+oracle_asm_packages_sles:
+  - oracleasm-kmp-default
+  - oracleasm-kmp-xen
+  - "{{ asmlib_rpm_sles }}"
+
+# @var oracle_sysctl:description: >
+# Configure parameter in sysctl.
+#
+# _Important_
+#
+# Do not add configurations for Hugepages here!
+# @end
+oracle_sysctl:
+  - {name: kernel.shmall, value: 4294967296}
+  - {name: kernel.shmmax, value: 68719476736}
+  - {name: kernel.shmmni, value: 4096}
+  - {name: kernel.sem, value: "250 32000 100 128"}
+  - {name: fs.file-max, value: 6815744}
+  - {name: fs.aio-max-nr, value: 3145728}
+  - {name: net.ipv4.ip_local_port_range, value: "9000 65500"}
+  - {name: net.core.rmem_default, value: 262144}
+  - {name: net.core.rmem_max, value: 4194304}
+  - {name: net.core.wmem_default, value: 262144}
+  - {name: net.core.wmem_max, value: 1048576}
+  - {name: kernel.panic_on_oops, value: 1}
+  - {name: vm.min_free_kbytes, value: 524288}
+
+# @var oracle_hugepages:description: >
+# This is an internal variable. Do not change it!
+# @end
+oracle_hugepages:
+  - {name: vm.nr_hugepages, value: "{{ nr_hugepages }}"}

@@ -1,0 +1,43 @@
+:toc:
+:toc-placement!:
+toc::[]
+
+IMPORTANT: This documentation is a work in progress!
+
+= Ansible as a Docker Container
+
+The development and test of `ansible-oracle` is done in a Docker Container.
+This allows a simple switch between ansible versions and an easy implementation at a customer site, because you can use your own chosen version of Ansible for `ansible-oracle`.
+
+Requirements:
+
+- Docker
+
+- docker-compose
+- ssh-agent +
+The ssh-agent is configured inside the docker-compose.yml.
+It simplifies the connection to the target machines via SSH.
+
+== Build
+
+----
+cd docker
+docker-compose build
+----
+
+== Start Container
+
+----
+cd docker
+docker-compose run --rm ansible bash
+----
+
+== Install Collection
+
+IMPORTANT: `ansible-oracle` is designed to run as a container.
+
+----
+cd docker
+docker-compose run --rm ansible bash
+ansible-galaxy collection install -r requirements.yml
+----

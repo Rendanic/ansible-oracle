@@ -1,0 +1,9 @@
+---
+
+- name: Database Server Installation
+  hosts: "{{ hostgroup | default('all') }}"
+  become: true
+  any_errors_fatal: true
+  roles:
+    - opitzconsulting.ansible_oracle.oraswdb_install
+    - opitzconsulting.ansible_oracle.oraswdb_manage_patches

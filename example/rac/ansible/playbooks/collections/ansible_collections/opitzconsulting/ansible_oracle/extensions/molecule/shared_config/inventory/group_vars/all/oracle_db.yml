@@ -1,0 +1,195 @@
+---
+# special test with copy patches via www
+# is_sw_source_local: false
+# oracle_sw_source_www: http://10.0.2.15:8080
+
+oraswdb_golden_image_create: true
+golden_image_dest: /u01/golden
+
+oracle_sw_source_local: /vagrant
+
+apply_patches_db: true
+
+oracle_sw_patches:
+  - filename: p35643107_190000_Linux-x86-64.zip
+    patchid: 35643107
+    version: 19.3.0.0
+    description: Database Release Update 19.21.0.0.231017
+  - filename: p35648110_190000_Linux-x86-64.zip
+    patchid: 35648110
+    version: 19.3.0.0
+    description: OJVM RELEASE UPDATE 19.21.0.0
+    creates: 35354406/README.txt
+  - filename: p35787077_1921000DBRU_Generic.zip
+    patchid: 35787077
+    unique_patchid: 25410019
+    version: 19.3.0.0
+    description: DATAPUMP BUNDLE PATCH 19.21.0.0.0
+  - filename: p29213893_1921000DBRU_Generic.zip
+    patchid: 29213893
+    unique_patchid: 25362849
+    version: 19.3.0.0
+    description: "DBMS_STATS FAILING WITH ERROR ORA-01422"
+
+# Important!
+# The converge.yml disables the installation of patches.
+# That is tested in side-effect.yml with installation of OneOff 29213893 for 19.3.
+# The OneOff is removed before the installation of RU 19.20 and then reinstalled with the
+db_homes_installed:
+  - home: db19-si-ee
+    state: present
+    apply_patches: false  # patching is done in side-effect.yml!
+
+db_homes_config:
+  db19-si-ee:
+    version: 19.3.0.0
+    oracle_home: /u01/app/oracle/product/19/db19-si-ee
+    edition: EE
+    opatch_minversion: 12.2.0.1.36
+    # imagename: db_home_19_ol9.21.zip
+    opatch:
+      # - {patchid: 29213893, state: absent, excludeUPI: 25224952, stop_processes: true}  # 19.3
+      # - {patchid: 29213893, state: absent, excludeUPI: 24722761, stop_processes: true}  # 19.15
+      - patchid: 35643107
+        # Database Release Update 19.21.0.0.231017
+        patchversion: 19.21.0.0.231017
+        stop_processes: true
+        state: present
+      - patchid: 35648110
+        # Oracle JavaVM Component Release Update (OJVM RU) 19.21.0.0.0.0.231017
+        stop_processes: true
+        state: present
+      - patchid: 35787077
+        # DATAPUMP BUNDLE PATCH 19.21.0.0.0
+        stop_processes: false
+        state: present
+        excludeUPI: 25410019
+      - patchid: 29213893
+        # DBMS_STATS FAILING WITH ERROR ORA-01422"
+        stop_processes: true
+        state: present
+        excludeUPI: 25362849
+
+oracle_listeners_config:
+  LISTENER:
+    home: db19-si-ee
+    address:
+      - host: "{{ ansible_hostname }}"
+        protocol: TCP
+        port: 1521
+
+listener_installed:
+  - home: db19-si-ee
+    listener_name: LISTENER
+    state: present
+
+oracle_databases:
+  - home: db19-si-ee
+    oracle_db_name: &oracle_db_name DB1
+    oracle_db_type: SI
+    is_container: true
+    storage_type: FS
+    oracle_database_type: MULTIPURPOSE
+    redolog_size: 50M
+    redolog_groups: 3
+    datafile_dest: /u01/app/oracle/oradata
+    recoveryfile_dest: /u01/app/oracle//fra
+    listener_name: LISTENER
+    listener_port: &cdb_listener_port 1521
+    # *local_listener is used in initparam as an achor
+    local_listener: &local_listener "{{ ansible_hostname }}:1521"
+    archivelog: false
+    flashback: false
+    force_logging: true
+    state: present
+    statspack:
+      purgedays: 14
+      snaplevel: 7
+      tablespace: PERFSTAT
+      state: present
+    tablespaces:
+      - name: PERFSTAT
+        size: 10M
+        autoextend: true
+        next: 50M
+        maxsize: 4G
+        content: permanent
+        state: present
+    init_parameters:
+      - {name: db_create_file_dest, value: '/u01/app/oracle/oradata', scope: both, state: present}
+      - {name: db_create_online_log_dest_1, value: '/u01/app/oracle/oradata', scope: both, state: present}
+      - {name: recyclebin, value: 'off', scope: spfile, state: present}
+      - {name: pga_aggregate_target, value: '128M', scope: both, state: present}
+      - {name: sga_target, value: '1808M', scope: spfile, state: present}
+
+oracle_pdbs:
+  - cdb: DB1
+    home: db19-si-ee
+    pdb_name: ORCLPDB
+    listener_port: 1521
+    state: present
+    datafile_dest: /u01/app/oracle/oradata
+    statspack:
+      purgedays: 14
+      snaplevel: 7
+      tablespace: PERFSTAT
+      state: present
+    tablespaces:
+      - name: PERFSTAT
+        size: 10M
+        autoextend: true
+        next: 50M
+        maxsize: 4G
+        content: permanent
+        state: present
+
+_tnsnames_config_pdb_helper:
+  - key: "{{ oracle_pdbs[0]['pdb_name'] }}"
+    alias:
+      - "{{ oracle_pdbs[0]['pdb_name'] }}_SYSTEM"
+      - "{{ oracle_pdbs[0]['pdb_name'] }}_PERFSTAT"
+    value:
+      connect:
+        service_name: "{{ oracle_pdbs[0]['pdb_name'] }}"
+      address:
+        - host: "{{ ansible_hostname }}"
+
+oracle_tnsnames_config: "{{ _tnsnames_config_pdb_helper | items2dict }}"
+
+tnsnames_installed:
+  - tnsname: "{{ oracle_pdbs[0]['pdb_name'] }}"
+    home: db19-si-ee
+    state: present
+
+sqlnet_config:
+  sqlnetalias1:
+    - {name: "ADR_BASE", value: "/u01/app/oracle/"}
+    - {name: "SQLNET.ALLOWED_LOGON_VERSION_CLIENT", value: 12}
+    - {name: "SQLNET.WALLET_OVERRIDE", value: 'TRUE'}
+    - name: WALLET_LOCATION
+      value: |-
+        (
+          SOURCE =
+            (METHOD = FILE)(METHOD_DATA = (DIRECTORY=/u01/app/oracle/wallet))
+          )
+
+sqlnet_installed:
+  - home: db19-si-ee
+    sqlnet: sqlnetalias1
+    state: present
+
+oracle_wallet_config:
+  - name: wallet1
+    home: db19-si-ee
+    path: /u01/app/oracle/wallet
+    state: present
+    # mode: g+rx
+    dbcredentials:
+      - tns_name: "{{ oracle_pdbs[0]['pdb_name'] }}_SYSTEM"
+        db_name: "{{ oracle_pdbs[0]['pdb_name'] }}"
+        db_user: system
+        state: present
+      - tns_name: "{{ oracle_pdbs[0]['pdb_name'] }}_PERFSTAT"
+        db_name: "{{ oracle_pdbs[0]['pdb_name'] }}"
+        db_user: perfstat
+        state: present

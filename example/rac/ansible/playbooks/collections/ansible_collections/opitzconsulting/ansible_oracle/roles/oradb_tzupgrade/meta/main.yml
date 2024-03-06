@@ -1,0 +1,28 @@
+---
+# @meta description: >
+# Manage timezone upgrades for an Oracle Database
+# @end
+# @meta author: [Alexandru Tică]
+galaxy_info:
+  role_name: oradb_tzupgrade
+  author: Alexandru Tică
+  company: Alexandru Tică
+  description: Manage timezone upgrades for an Oracle Database
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orahost_meta

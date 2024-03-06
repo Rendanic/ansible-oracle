@@ -1,0 +1,25 @@
+---
+# @tag assert_ansible:description: Assert version of Ansible Core
+- name: Assert ansible version
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_version.full is version(_ao_ansible_executable_min_version , '>=')
+    fail_msg: "Found version {{ ansible_version.full }} expected {{ _ao_ansible_executable_min_version }} or newer"
+  vars:
+    _ao_ansible_executable_min_version: 2.14
+  tags:
+    - always
+    - assert_ansible
+
+- name: Import assert_variable_types.yml
+  ansible.builtin.import_tasks: assert_variable_types.yml
+
+- name: Import assert_sqlnet.yml
+  ansible.builtin.import_tasks: assert_sqlnet.yml
+
+- name: Import assert_sqlnet.yml
+  ansible.builtin.import_tasks: assert_oracle_databases.yml
+
+- name: Import assert_sqlnet.yml
+  ansible.builtin.import_tasks: assert_cluster.yml

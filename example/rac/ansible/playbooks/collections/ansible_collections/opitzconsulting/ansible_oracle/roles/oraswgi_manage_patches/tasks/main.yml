@@ -1,0 +1,81 @@
+---
+- name: Grid-Infrastructure/Restart
+  when:
+    - oracle_install_option_gi != ''
+    - gi_patches is defined
+    - apply_patches_gi | bool
+  block:
+    - name: Assert oracle_sw_patches
+      ansible.builtin.import_role:
+        name: orasw_meta
+        tasks_from: assert_oracle_sw_patches.yml
+        allow_duplicates: false
+      when:
+        - oracle_sw_patches | default([]) | length > 0
+      tags:
+        - always
+
+    - name: Check if GI has been configured
+      ansible.builtin.stat:
+        path: /etc/oracle/olr.loc
+      register: olrloc
+
+    - name: Create patch-base directory (version specific)
+      ansible.builtin.file:
+        dest: "{{ oracle_patch_stage }}/{{ oracle_install_version_gi }}"
+        mode: "0775"
+        owner: "{{ _grid_install_user }}"
+        group: "{{ oracle_group }}"
+        state: directory
+      tags:
+        - directories
+
+    - name: Upgrade OPatch
+      ansible.builtin.include_tasks: opatch-upgrade.yml
+
+    - name: Check current opatch version
+      opitzconsulting.ansible_oracle.oracle_opatch:
+        oracle_home: "{{ oracle_home_gi }}"
+        state: opatchversion
+      register: current_opatch_version
+      tags: current_opatch_version
+
+    - name: Configure ocm.rsp for opatch < 12.2.0.1.5
+      when:
+        - current_opatch_version is defined
+        - current_opatch_version.msg is version_compare('12.2.0.1.5', '<')
+      block:
+        - name: Configure ocm.rsp (1)
+          ansible.builtin.template:
+            src: ocmrsp.expect.j2
+            dest: "{{ oracle_patch_stage }}/{{ oracle_install_version_gi }}/ocmrsp.expect"
+            mode: "0777"
+            force: true
+          become: true
+          become_user: "{{ _grid_install_user }}"
+          tags:
+            - ocmconfig
+
+        - name: Configure ocm.rsp (2)
+          ansible.builtin.shell: "{{ oracle_patch_stage }}/{{ oracle_install_version_gi }}/ocmrsp.expect"
+          # noqa command-instead-of-shell
+          become: true
+          become_user: "{{ _grid_install_user }}"
+          changed_when: false
+          tags:
+            - ocmconfig
+
+    # The apply is done with gridSetup.sh
+    # => no work, when patches are mounted to target server
+    #    because gridSetup.sh -applyRU reads all directly via nfs mount.
+    - name: Patch before configure Grid-Infrastructure/Restart (gridSetup.sh -applyRU)
+      ansible.builtin.include_tasks: pre_install_patch.yml
+      when:
+        - patch_before_rootsh | bool
+        - not olrloc.stat.exists | bool
+        - oracle_sw_copy | bool
+
+    - name: Patch configured Grid-Infrastructure/Restart
+      ansible.builtin.include_tasks: post_install_patch.yml
+      when:
+        - olrloc.stat.exists

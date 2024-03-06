@@ -1,0 +1,106 @@
+---
+# tasks file for manage_db
+- name: manage_db | assert
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    always
+
+- name: manage_db | include tnsnames.yml
+  ansible.builtin.include_tasks: tnsnames.yml
+  with_items:
+    - "{{ tnsnames_installed }}"
+  loop_control:
+    loop_var: tnsinst
+  when: tnsnames_installed is defined
+  tags: tnsnames2
+
+- name: manage_db | set fact for Listener
+  ansible.builtin.set_fact:
+    _oradb_manage_db_create_listener: "{{ _oradb_manage_db_create_listener }}"
+  with_items: "{{ oracle_databases }}"
+  loop_control:
+    loop_var: odb
+    label: >-
+      create_listener {{ _oradb_manage_db_create_listener | default('') }}
+      oracle_home {{ odb.home | default('') }}
+  tags: set_fact
+
+- name: manage_db | include sqlnet.yml
+  ansible.builtin.include_tasks: sqlnet.yml
+  with_items:
+    - "{{ sqlnet_installed }}"
+  loop_control:
+    loop_var: sqlnetinst
+  when: sqlnet_installed is defined
+  tags: sqlnet2
+  vars:
+    _sqlnet_ansible_file: "{{ _oradb_manage_db_tns_home }}/network/admin/sqlnet_ansible.ora"
+
+- name: manage_db | include listener_details.yml
+  ansible.builtin.include_tasks: listener_details.yml
+  with_items:
+    - "{{ listener_installed }}"
+  loop_control:
+    loop_var: lsnrinst
+  when: listener_installed is defined
+  tags: listener2
+
+# old listener logic
+# => only used when listener_installed is not existing
+- name: manage_db | Create listener with netca
+  ansible.builtin.include_tasks: listener.yml
+  with_items:
+    - "{{ oracle_databases }}"
+  loop_control:
+    loop_var: odb
+    label: >-
+      listener_name {{ odb.listener_name | default('') }}
+      oracle_home {{ odb.home | default('') }}
+  when:
+    - _oradb_manage_db_create_listener
+    - oracle_databases is defined
+    - listener_installed is not defined
+  tags: listener
+
+- name: manage_db | Add change-pdb script
+  ansible.builtin.template:
+    src: pdb.sql.j2
+    dest: "{{ oracle_user_home }}/.Scripts/chpdb.sql"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: 0644
+  tags: sql_script
+
+- name: Create/Modify database
+  ansible.builtin.include_tasks: manage-db.yml
+  with_items:
+    - "{{ oracle_databases }}"
+  loop_control:
+    loop_var: odb
+    label: >-
+      oracle_db_name={{ odb.oracle_db_name | default('') }}
+  when: oracle_databases is defined
+  tags: create_db,dbca,customdbcatemplate,dotprofile_db,listener2
+
+- name: manage_db | Check if database is running
+  ansible.builtin.shell: ps -ef |grep pmon |grep -v grep
+  tags:
+    - psout
+  register: psout
+  changed_when: false
+  failed_when: false
+  ignore_errors: true
+
+- name: manage_db | psout
+  ansible.builtin.debug:
+    var: psout.stdout_lines
+  changed_when: false
+  failed_when: false
+  when: psout is defined
+  tags:
+    - psout
+
+- name: Regather facts for Databases
+  ansible.builtin.import_role:
+    name: oradb_facts
+    allow_duplicates: true

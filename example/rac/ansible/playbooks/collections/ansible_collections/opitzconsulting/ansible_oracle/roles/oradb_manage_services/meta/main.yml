@@ -1,0 +1,28 @@
+---
+# @meta description: >
+# Manage services in Oracle
+# @end
+# @meta author: [Mikael Sandström]
+galaxy_info:
+  role_name: oradb_manage_services
+  author: Mikael Sandström
+  description: Manage services in Oracle
+  company: Mikael Sandström
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orasw_meta

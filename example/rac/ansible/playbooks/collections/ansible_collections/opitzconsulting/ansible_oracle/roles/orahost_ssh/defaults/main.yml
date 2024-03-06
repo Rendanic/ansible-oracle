@@ -1,0 +1,9 @@
+---
+# @var orahost_ssh_keyname:description: >
+# The name of used key during role execution.
+#
+# Example for oracle:
+#
+# /home/oracle/.ssh/{{ orahost_ssh_keyname }}
+# @end
+orahost_ssh_keyname: id_ed25519

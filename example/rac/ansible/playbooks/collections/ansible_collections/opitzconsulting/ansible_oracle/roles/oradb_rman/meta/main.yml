@@ -1,0 +1,31 @@
+---
+# @meta description: >
+# Oracle RMAN Backup for ansible-oracle
+#
+# Please use only `oradb_rman_` variables from role `oradb_rman`.
+#
+# All other role variables from `oradb_rman` are deprecated and will be removed in a future release.
+# @end
+# @meta author: [Thorsten Bruhns]
+galaxy_info:
+  author: Thorsten Bruhns
+  description: Oracle RMAN Backup for ansible-oracle
+  company: Thorsten Bruhns
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orasw_meta

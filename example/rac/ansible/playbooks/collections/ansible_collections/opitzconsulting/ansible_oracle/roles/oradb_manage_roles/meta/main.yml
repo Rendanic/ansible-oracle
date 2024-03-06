@@ -1,0 +1,29 @@
+---
+# @meta description: >
+# Manage roles in Oracle
+# @end
+# @meta author: [Mikael Sandström]
+galaxy_info:
+  role_name: oradb_manage_roles
+  author: Mikael Sandström
+  description: Manage roles in Oracle
+  company: Mikael Sandström
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orasw_meta
+  - role: oradb_facts

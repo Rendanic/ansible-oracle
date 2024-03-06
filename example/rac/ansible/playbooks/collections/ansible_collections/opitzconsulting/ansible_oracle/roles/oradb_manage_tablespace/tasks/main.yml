@@ -1,0 +1,87 @@
+---
+- name: manage tablespaces
+  tags: tablespace
+  block:
+
+    - name: assert
+      ansible.builtin.import_role:
+        name: orasw_meta
+        tasks_from: assert_oracle_databases.yml
+        allow_duplicates: false
+
+    - name: manage tablespaces (db/cdb)
+      opitzconsulting.ansible_oracle.oracle_tablespace:
+        hostname: "{{ oracle_hostname }}"
+        port: "{{ _listener_port_cdb }}"
+        service_name: "{{ _db_service_name }}"
+        user: "{{ db_user }}"
+        password: "{{ _db_password_cdb }}"
+        mode: "{{ db_mode }}"
+        tablespace: "{{ odb.1.name }}"
+        datafile: "{{ odb.1.datafile | default(omit) }}"
+        numfiles: "{{ odb.1.numfiles | default(omit) }}"
+        bigfile: "{{ odb.1.bigfile | default(omit) }}"
+        size: "{{ odb.1.size | default(omit) }}"
+        autoextend: "{{ odb.1.autoextend | default(omit) }}"
+        next: "{{ odb.1.next | default(omit) }}"
+        maxsize: "{{ odb.1.maxsize | default(omit) }}"
+        content: "{{ odb.1.content | default(omit) }}"
+        state: "{{ odb.1.state | default('present') }}"
+      environment: "{{ _oracle_env }}"
+      run_once: "{{ _oraswgi_meta_configure_cluster }}"
+      with_subelements:
+        - "{{ oracle_databases }}"
+        - tablespaces
+        - flags:
+          skip_missing: true
+      loop_control:
+        loop_var: odb
+        label: >-
+          service: {{ _db_service_name }}:{{ _listener_port_cdb }}
+          tablespace: {{ odb.1.name }}
+          content: {{ odb.1.content | default(omit) }}
+          state: {{ odb.1.state | default('present') }}
+      when:
+        - oracle_databases is defined
+        - odb.1 is defined
+        - odb.0.state | upper == 'PRESENT'
+
+    - name: manage tablespaces (pdb)
+      opitzconsulting.ansible_oracle.oracle_tablespace:
+        hostname: "{{ oracle_hostname }}"
+        port: "{{ _listener_port_pdb }}"
+        service_name: "{{ _db_service_pdb }}"
+        user: "{{ db_user }}"
+        password: "{{ _db_password_pdb }}"
+        mode: "{{ db_mode }}"
+        tablespace: "{{ opdb.1.name }}"
+        datafile: "{{ opdb.1.datafile | default(omit) }}"
+        numfiles: "{{ opdb.1.numfiles | default(omit) }}"
+        bigfile: "{{ opdb.1.bigfile | default(omit) }}"
+        size: "{{ opdb.1.size | default(omit) }}"
+        autoextend: "{{ opdb.1.autoextend | default(omit) }}"
+        next: "{{ opdb.1.next | default(omit) }}"
+        maxsize: "{{ opdb.1.maxsize | default(omit) }}"
+        content: "{{ opdb.1.content | default(omit) }}"
+        state: "{{ opdb.1.state | default('present') }}"
+      environment: "{{ _oracle_env_pdb }}"
+      run_once: "{{ _oraswgi_meta_configure_cluster }}"
+      with_subelements:
+        - "{{ oracle_pdbs }}"
+        - tablespaces
+        - flags:
+          skip_missing: true
+      when:
+        - oracle_pdbs is defined
+        - opdb.1 is defined
+        - opdb.0.state == 'present'
+        - >-
+          oracle_databases | selectattr('oracle_db_name', 'match', opdb.0.cdb)
+          | map(attribute='state') | list | first == 'present'
+      loop_control:
+        loop_var: opdb
+        label: >-
+          pdb: {{ opdb.0.pdb_name }}:{{ _listener_port_pdb }}
+          tablespace: {{ opdb.1.name }}
+          content: {{ opdb.1.content | default(omit) }}
+          state: {{ opdb.1.state | default('present') }}

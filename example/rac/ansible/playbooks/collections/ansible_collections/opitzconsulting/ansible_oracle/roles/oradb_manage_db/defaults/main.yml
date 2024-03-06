@@ -1,0 +1,13 @@
+---
+# @var dbca_templatename:description: >
+# Default template name used by DBCA during execution.
+# @end
+dbca_templatename: General_Purpose.dbc
+
+oracle_gi_cluster_type: STANDARD
+hostgroup_hub: "{{ hostgroup }}-hub"
+
+# @var listener_name:description: >
+# Default name for LISTENER
+# @end
+listener_name: LISTENER

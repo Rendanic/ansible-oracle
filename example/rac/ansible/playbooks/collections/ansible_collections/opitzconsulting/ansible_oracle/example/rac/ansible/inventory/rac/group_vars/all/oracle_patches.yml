@@ -1,0 +1,6 @@
+---
+oracle_sw_patches:
+  - filename: p35940989_190000_Linux-x86-64.zip
+    patchid: 35940989
+    version: 19.3.0.0
+    description: GI RELEASE UPDATE 19.22.0.0.0

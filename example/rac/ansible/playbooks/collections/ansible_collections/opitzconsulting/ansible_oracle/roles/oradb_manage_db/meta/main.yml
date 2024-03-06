@@ -1,0 +1,29 @@
+---
+# @meta description: >
+# Create, modify and remove Oracle Databases
+# @end
+# @meta author: [Mikael Sandström]
+galaxy_info:
+  role_name: oradb_manage_db
+  author: Mikael Sandström
+  description: Create, modify and remove Oracle Databases
+  company: Mikael Sandström
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orahost_meta
+  - role: orasw_meta

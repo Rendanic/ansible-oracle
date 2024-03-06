@@ -1,0 +1,32 @@
+---
+# @meta description: >
+# Manage Statspack in Oracle.
+#
+# Not RAC aware at the moment.
+# @end
+# @meta author: [Thorsten Bruhns]
+# #todo improvement: Add support for RAC Setups
+galaxy_info:
+  role_name: oradb_manage_statspack
+  author: Thorsten Bruhns
+  description: Manage Statspack in Oracle
+  company: Thorsten Bruhns
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orasw_meta
+  - role: oradb_facts

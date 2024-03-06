@@ -1,0 +1,228 @@
+---
+# @todo bug: Module oracle_services does not support 'as sysdba'. Connect User system is hard coded for the moment...
+# @todo bug: Role require Oracle Restart/GI at the moment
+
+- name: Create services (db/cdb)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ odb.1.name }}"
+    database_name: "{{ odb.0.oracle_db_name }}"
+    preferred_instances: "{{ odb.1.pi | default(omit) }}"
+    available_instances: "{{ odb.1.ai | default(omit) }}"
+    role: "{{ odb.1.role | default(omit) }}"
+    state: present
+    host: "{{ oracle_hostname }}"
+    port: "{{ _listener_port_cdb }}"
+    username: system
+    password: "{{ _db_password_cdb }}"
+    service_name: "{{ _db_service_name }}"
+  environment: "{{ _oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_databases }}"
+    - services
+    - flags:
+      skip_missing: true
+  loop_control:
+    loop_var: odb
+    label: >-
+      database_name {{ odb.0.oracle_db_name | default('') }}
+      name {{ odb.1.name | default('') }}
+  when:
+    - oracle_databases is defined
+    - odb.0.state == 'present'
+    - odb.1 is defined
+    - (odb.1.state == 'present' or odb.1.state == 'started')
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: create_service,services
+
+- name: Create services (pdb)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.cdb }}"
+    pi: "{{ item.1.pi | default(omit) }}"
+    ai: "{{ item.1.ai | default(omit) }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    role: "{{ item.1.role | default(omit) }}"
+    state: present
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_pdb }}"
+    sn: "{{ item.0.pdb_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_pdbs }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_pdbs is defined
+    - item.0.state == 'present'
+    - item.1 is defined
+    - (item.1.state == 'present' or item.1.state == 'started')
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: create_service,services
+
+- name: Start services (db/cdb)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.oracle_db_name }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: started
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_cdb }}"
+    sn: "{{ db_service_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_databases }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_databases is defined
+    - item.0.state | lower == 'present'
+    - item.1 is defined
+    - item.1.state == 'started'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services
+
+- name: Start services (pdbs)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.cdb }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: started
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_pdb }}"
+    sn: "{{ item.0.pdb_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_pdbs }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_pdbs is defined
+    - item.0.state == 'present'
+    - item.1 is defined and item.1.state == 'started'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services
+
+- name: Stop services (db/cdb)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.oracle_db_name }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: stopped
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_cdb }}"
+    sn: "{{ db_service_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_databases }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_databases is defined
+    - item.0.state | lower == 'present'
+    - item.1 is defined
+    - item.1.state == 'stopped' or item.1.state == 'absent'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services
+
+- name: Stop services (pdbs)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.cdb }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: stopped
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_pdb }}"
+    sn: "{{ item.0.pdb_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_pdbs }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_pdbs is defined
+    - item.0.state | lower == 'present'
+    - item.1 is defined
+    - item.1.state == 'stopped' or item.1.state == 'absent'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services
+
+- name: Remove services (db/cdb)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.oracle_db_name }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: absent
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_cdb }}"
+    sn: "{{ db_service_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_databases }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_databases is defined
+    - item.0.state | lower == 'present'
+    - item.1 is defined
+    - item.1.state == 'absent'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services
+
+- name: Remove services (pdbs)
+  opitzconsulting.ansible_oracle.oracle_services:
+    name: "{{ item.1.name }}"
+    database_name: "{{ item.0.cdb }}"
+    pdb: "{{ item.0.pdb_name | default(omit) }}"
+    state: absent
+    host: "{{ oracle_hostname }}"
+    port: "{{ listener_port_template }}"
+    un: "{{ db_user }}"
+    pw: "{{ _db_password_pdb }}"
+    sn: "{{ item.0.pdb_name }}"
+  environment: "{{ oracle_env }}"
+  run_once: "{{ _oraswgi_meta_configure_cluster }}"
+  with_subelements:
+    - "{{ oracle_pdbs }}"
+    - services
+    - flags:
+      skip_missing: true
+  when:
+    - oracle_pdbs is defined
+    - item.0.state == 'present'
+    - item.1 is defined
+    - item.1.state == 'absent'
+  become: true
+  become_user: "{{ oracle_user }}"
+  tags: start_service,services

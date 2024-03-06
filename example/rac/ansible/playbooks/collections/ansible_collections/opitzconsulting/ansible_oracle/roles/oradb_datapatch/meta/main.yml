@@ -1,0 +1,28 @@
+---
+# @meta description: >
+# Manage datapatch for Oracle Database
+# @end
+# @meta author: [Mikael Sandström]
+galaxy_info:
+  role_name: oradb_datapatch
+  author: Mikael Sandström
+  description: Manage datapatch for Oracle Database
+  company: Mikael Sandström
+
+  license: license (MIT)
+
+  min_ansible_version: 2.14.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "6"
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - database
+    - oracle
+
+dependencies:
+  - role: orasw_meta
