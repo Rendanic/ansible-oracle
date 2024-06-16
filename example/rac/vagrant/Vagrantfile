@@ -37,6 +37,7 @@ count_shared_disk     = 2
 #############################
 
 
+give_info =true
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
@@ -57,10 +58,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.synced_folder ENV['VAGRANT_ANSIBLE_ORACLE_SW'], "/sw/oracle", disabled: false, mount_options: ["ro"]
 
       puts " "
-      config.vm.hostname = "#{vm_name}-192-168-56-#{i+170}.nip.io"
-      lanip = "192.168.56.#{i+170}"
+      config.vm.hostname = "#{vm_name}-192-168-56-#{i+190}.nip.io"
+      lanip = "192.168.56.#{i+190}"
       puts vm_name + " eth1 lanip  :" + lanip
-      privip = "192.168.57.#{i+170}"
+      privip = "192.168.57.#{i+190}"
       puts vm_name + " eth2 privip :" + privip
       config.vm.provider :virtualbox do |vb|
         vb.name = vm_name + "." + Time.now.strftime("%y%m%d%H%M")
@@ -89,4 +90,24 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.network :private_network, ip: privip
     end
   end
+
+  config.vm.provision "shell", inline: <<-SHELL
+
+    # copy public key to vagrant user
+    ssh_public_key=/vagrant/id_rsa.pub
+    if test -f "$ssh_public_key" ; then
+      echo "Check if public key $ssh_public_key is valid."
+      if ssh-keygen -l -f "$ssh_public_key" ; then
+        echo "Add public key to /home/vagrant/.ssh/authorized_keys"
+        cat "$ssh_public_key" >> /home/vagrant/.ssh/authorized_keys
+      fi
+    fi
+
+    sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    systemctl restart sshd.service
+
+    yum install -y gcc make perl kernel-uek-devel
+    /sbin/rcvboxadd quicksetup all
+
+  SHELL
 end
