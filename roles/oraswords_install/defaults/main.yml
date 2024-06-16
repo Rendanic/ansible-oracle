@@ -1,0 +1,123 @@
+---
+#
+# @var gi_ignoreprereq:description: >
+# false => Do not ignore failed runcluvfy.sh
+# true => Ignore  failed runcluvfy.sh
+# @end
+gi_ignoreprereq: false
+
+# @var default_gipass:description: >
+# Default password for Grid-Infrastructure and ASM-Users.
+#
+# Important
+#
+# It is mandatory to set this variable in your inventory!
+# @end
+default_gipass: ""
+
+# The check for the old passwords are there for  backwards compatibility and only temporary, will be removed
+default_dbpass: "{% if item.0.oracle_db_passwd is defined %}{{ item.0.oracle_db_passwd }}{% else %}Oracle123{% endif %}"
+
+# @var oracle_scan:description: >
+# SCAN DNS-Name
+# @end
+# oracle_scan:
+
+# @todo bug: oracle_vip is not flexible enough.
+# @var oracle_vip:description: >
+# suffix added to hostnames for VIPs.
+#
+# hostnamea{{ oracle_vip }}
+# @end
+oracle_vip: -vip
+
+# @var endoracle_scan_port:description: >
+# Port for SCAN-Listener
+# @end
+oracle_scan_port: 1521
+
+# @todo bug: oracle_ic_net will be removed in the future
+# @var oracle_ic_net:description: >
+# Do not use - is replaced in the future!
+# Reason why RAC support has been disabled...
+# @end
+oracle_ic_net: 3.3.3.{{ ansible_all_ipv4_addresses[0].split(".")[-1] }}
+
+# @var oracle_asm_init_dg:description: >
+# Do not use - is replaced in the future!
+# Reason why RAC support has been disabled...
+# @end
+oracle_asm_init_dg: crs
+
+
+# @var cvuqdisk_rpm:description: >
+# Name of RPM for cvuqdisk.
+#
+# RPM is installed from {{ oracle_home_gi }}/cv/rpm/
+# @end
+cvuqdisk_rpm: cvuqdisk-1.0.10-1.rpm
+
+# @var oracle_cluster_name:description: >
+# Name of Grid-Infrastructure Cluster.
+#
+# The maximum length allowed for clustername is 63 characters. The name can be
+# any combination of lower and uppercase alphabets (A - Z), (0 - 9) and hyphens (-).
+#
+# Only set this variable, when `orasw_meta_cluster_hostgroup` contains a '_'.
+#
+# Important! Ansible hostgrouds could not contain a '-' in name!
+# @end
+oracle_cluster_name: "{{ orasw_meta_cluster_hostgroup }}"
+
+# @var oracle_gi_nic_pub:description: >
+# Name of public network interface.
+# @end
+oracle_gi_nic_pub: eth0
+
+# @var oracle_gi_nic_priv:description: >
+# Name of private network interface.
+# @end
+oracle_gi_nic_priv: eth1
+
+# @var run_configtoolallcommand:description: >
+# Run configtoolcommand during installation.
+#
+# Do not disable this!
+# @end
+run_configtoolallcommand: true
+
+# @var oracle_cluster_mgmdb:description: >
+# Create _MGMTBD on cluster.
+# @end
+oracle_cluster_mgmdb: false
+
+# @var oracle_gi_cluster_type:description: >
+# Define clusterware type.
+# @end
+oracle_gi_cluster_type: STANDARD
+
+# @var oracle_asm_storage_option:description: >
+# @end
+oracle_asm_storage_option: "{% if oracle_install_version_gi is version('12.2', '>=') %}FLEX_ASM_STORAGE{% else %}LOCAL_ASM_STORAGE{% endif %}"
+
+# @var oracle_gi_gns_subdomain:description: >
+# Define ths GNS subdomain for Cluster
+# @end
+# oracle_gi_gns_subdomain:
+
+# @var oracle_gi_gns_vip:description: >
+# Define GNS VIP for Clusterware.
+# @end
+oracle_gi_gns_vip:
+
+# @var oracle_sw_image_gi:description: >
+# @end
+oracle_sw_image_gi:
+  - {filename: LINUX.X64_213000_grid_home.zip, version: 21.3.0.0, creates: 'install/.img.bin'}
+  - {filename: LINUX.X64_193000_grid_home.zip, version: 19.3.0.0, creates: 'install/.img.bin'}
+  - {filename: LINUX.X64_180000_grid_home.zip, version: 18.3.0.0, creates: 'install/.img.bin'}
+  - {filename: linuxx64_12201_grid_home.zip, version: 12.2.0.1, creates: 'xdk/mesg/lsxja.msb'}
+  - {filename: linuxamd64_12102_grid_1of2.zip, version: 12.1.0.2, creates: 'grid/stage/sizes/oracle.crs.12.1.0.2.0.sizes.properties'}
+  - {filename: linuxamd64_12102_grid_2of2.zip, version: 12.1.0.2, creates: 'grid/install/.oui'}
+  - {filename: linuxamd64_12c_grid_1of2.zip, version: 12.1.0.1}
+  - {filename: linuxamd64_12c_grid_2of2.zip, version: 12.1.0.1}
