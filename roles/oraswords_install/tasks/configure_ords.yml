@@ -1,0 +1,27 @@
+---
+- name: Defaults
+  tags:
+    - ords_config
+  block:
+    - name: Configure_ords | DB setup
+      ansible.builtin.command:
+        chdir: /tmp
+        cmd: >-
+          ords install \
+            --config-dir {{ ords_config_dir }} \
+            --log-folder {{ ords_log_dir }} \
+            --admin-user "${SYSDBA_USER}" \
+            --db-hostname "${HOSTNAME}" \
+            --db-port ${DB_PORT} \
+            --db-servicename ${DB_SERVICE} \
+            --proxy-user \
+            --password-stdin <<EOF
+        ${SYSDBA_PASSWORD}
+        ${ORDS_PASSWORD}
+        EOF
+      register: ords_config1_res
+
+    - name: ords Output
+      ansible.builtin.debug:
+        var: ords_config1_res
+

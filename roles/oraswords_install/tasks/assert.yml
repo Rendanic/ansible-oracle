@@ -1,0 +1,8 @@
+---
+- name: assert | Assert OS
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'OracleLinux'
+      - ansible_distribution_major_version is version('7', '=')
+    fail_msg: >-
+      Installation of ORDS is limited to Oracle Linux 7, 8 and 9 at the moment.

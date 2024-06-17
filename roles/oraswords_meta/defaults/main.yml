@@ -1,0 +1,35 @@
+---
+# @var oraswords_meta_oracle_home:description: >
+# `ORACLE_HOME` for _ORDS_.
+# @end
+oraswords_meta_oracle_home: >-
+  {{ oracle_base }}/product/ords
+
+oraswords_meta_ords_config: >-
+  /etc/ords/config
+
+oraswords_meta_ords_logs: >-
+  /etc/ords/logs
+
+# @var oraswords_meta_db_pools:description: >
+# List of configured target in ORDS.
+#
+# Attributes:
+#
+# db_pool: <Pool in ORDS>
+#
+# pdb_name: <Target PDB. Needed to find the Password s>
+#
+# port: <Listener Port>
+#
+# service: <servicename of target. Defaults to pdb_name>
+#
+# hostname: <Hostname for target. Defaults to `inventory_hostname`>
+# @end
+oraswords_meta_db_pools:
+    - db_pool: default
+      pdb_name: orclpdb
+      admin_user: sys
+      service: orclpdb
+      port: 1521
+      # hostname:

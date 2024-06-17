@@ -1,13 +1,13 @@
-# oraswgi_install
+# oraswords_install
 
-Install Grid Infrastructure / ORacle Restart software.
+Install ORDS on Oracle Linux.
 
-This role has a dependency to `orahost_meta` and `orasw_meta` for default parameter.
+Defaults:
 
-Known Issues from Oracle:
+ORACLE_HOME: {{ oracle_base }}/product/ords
 
-- TOP Note: Solutions for Typical Grid Infrastructure/RAC Database runInstaller/DBCA for RAC Issues (Doc ID 1056713.1)
-- INS-06006 GI RunInstaller Fails If OpenSSH Is Upgraded to 8.x (Doc ID 2555697.1)
+This role is limited to Oracle Linux, due to installation
+from yum Repository from Oracle.
 
 ## Table of content
 
@@ -33,7 +33,6 @@ Known Issues from Oracle:
   - [oracle_sw_image_gi](#oracle_sw_image_gi)
   - [oracle_vip](#oracle_vip)
   - [run_configtoolallcommand](#run_configtoolallcommand)
-- [Discovered Tags](#discovered-tags)
 - [Open Tasks](#open-tasks)
 - [Dependencies](#dependencies)
 - [License](#license)
@@ -251,62 +250,17 @@ Do not disable this!
 run_configtoolallcommand: true
 ```
 
-## Discovered Tags
-
-**_always_**
-
-**_asmfd_**
-
-**_crsctl_**
-
-**_cvuqdisk_**
-
-**_directories_**
-
-**_dsset_**
-
-**_glogingi_**
-
-**_nfsmountdb_**
-
-**_nfsumountdb_**
-
-**_opatchls_**
-
-**_oragridinstall_**
-
-**_oragridsw_**
-
-**_oragridswunpack_**
-
-**_responsefileconfigtool_**
-
-**_responsefilegi_**
-
-**_runcluvfy_**
-
-**_runconfigtool_**
-
-**_runroot_**
-
-**_updatenodelist_**
 
 ## Open Tasks
 
 - (bug): oracle_vip is not flexible enough.
 - (bug): oracle_ic_net will be removed in the future
-- (bug): ConfigTools should not depend on olr.loc...
-- (bug): ConfigTools should not depend on olr.loc...
-- (information): add selectattr to asm_diskgroups
-- (information): Check if path for patches is ok with patch_id/patch_id
-- (information): add selectattr to asm_diskgroups
-- (information): Check if path for patches is ok with patch_id/patch_id
 
 ## Dependencies
 
 - orahost_meta
 - orasw_meta
-- oraswgi_meta
+- oraswords_meta
 
 ## License
 
@@ -314,4 +268,4 @@ license (MIT)
 
 ## Author
 
-Mikael Sandström, Thorsten Bruhns
+Thorsten Bruhns

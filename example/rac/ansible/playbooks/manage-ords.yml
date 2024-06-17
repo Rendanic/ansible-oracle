@@ -1,0 +1,7 @@
+---
+- name: Install and Configure Oracle Rest Data Services
+  hosts: "{{ hostgroup | default('all') }}"
+  become: true
+  any_errors_fatal: true
+  roles:
+    - opitzconsulting.ansible_oracle.oraswords_install
