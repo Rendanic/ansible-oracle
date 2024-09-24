@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+
+  site:
+    image: rendanic/hugo:ext-ubuntu
+    build:
+      context: .
+    command: server
+    network_mode: "host"
+    ports:
+      - "1313:1313"
+    volumes:
+      - ./..:/src
+    environment:
+      # HUGO_SOURCE: /src/website
+      # HUGO_CACHEDIR inside mount
+      # => prevent module download each time the container is started!
+      HUGO_CACHEDIR: /src/website/.cache
+
+    user: ubuntu

@@ -11,3 +11,12 @@ example/*/ansible/navigator/replay/*json
 example/*/ansible/context
 ansible-navigator.log
 navigator/replay/*json
+
+# hugo website generator
+website/public
+website/node_modules/
+website/package-lock.json
+website/package.json
+website/.hugo_build.lock
+website/resources/_gen
+website/.cache

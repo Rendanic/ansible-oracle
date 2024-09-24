@@ -1,0 +1,67 @@
+---
+title: "Website"
+draft: false
+weight: 20
+---
+
+:toc:
+:toc-placement!:
+:toclevels: 4
+toc::[]
+
+:sectnums:
+:sectnumlevels: 4
+
+## How to develop the documentation page?
+
+The documentation is build with https://gohugo.io/[hugo] and https://www.docsy.dev/[Docsy] as template. +
+There is a container for building or starting a `hugo server` for easy development of the documentation.
+
+The Setups between Docker or Podman is a little bit different.
+
+
+## Container Setup
+
+include::website/content/docs/development/container_setup.adoc[]
+
+## hugo with Docker
+
+### hugo live server
+
+IMPORTANT: This only works when current `uid` in shell is same as `ubuntu(1000)` inside the container.
+
+----
+cd ansible-oracle/website
+docker-compose run --rm -u ubuntu site -s /src/website server
+----
+
+
+### Building the public page
+
+IMPORTANT: This only works when current `uid` in shell is same as `ubuntu(1000)` inside the container.
+
+----
+cd ansible-oracle/website
+docker-compose run --rm -u ubuntu site -s /src/website
+----
+
+## hugo with Poman
+
+### hugo live server
+
+The default user inside the container is `hugo` with a different uid then the nonroot user of the podman Container. +
+This results in a `permission denied` when the uid of nonroot podman user is different then the uid of `hugo` inside the container while reading volume data.
+Starting with `--user=root` starts all provesses in the same namespace as the nontoot user which allows access to the volume data.
+
+.Start hugo server with Podman
+----
+cd ansible-oracle/website
+~/venv/podman/bin/podman-compose run --rm --user=root site -s /src/website server --bind 0.0.0.0
+----
+
+### Building the public page
+
+----
+cd ansible-oracle/website
+~/venv/podman/bin/podman-compose run --rm --user=root site -s /src/website
+----

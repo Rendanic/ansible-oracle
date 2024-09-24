@@ -1,0 +1,21 @@
+---
+title: "Ansible Controller"
+draft: true
+weight: 20
+---
+:toc:
+:toc-placement!:
+:toclevels: 4
+toc::[]
+
+:sectnums:
+:sectnumlevels: 4
+
+
+WARNING: *This guide is a work in progress!*
+
+== Ansible Controller
+
+There a different ways to run a ansible controller.
+
+f

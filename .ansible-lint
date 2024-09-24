@@ -21,6 +21,7 @@ exclude_paths:
   - example/*/ansible/playbooks/collections/ansible_collections
   - example/*/ansible/requirements.yml
   - playbooks/collections/ansible_collections
+  - website
 
 extra_vars:
   hostgroup: all

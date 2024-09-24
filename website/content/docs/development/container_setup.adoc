@@ -1,0 +1,81 @@
+### Docker
+
+.Oracle Linux 8
+----
+dnf install -y dnf-utils zip unzip
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+dnf remove -y runc
+dnf install -y docker-ce --nobest
+
+systemctl enable docker.service
+systemctl start docker.service
+
+docker info
+docker version
+----
+
+.Ubuntu
+----
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+----
+
+### rootless Podman
+
+This is not a full description for how to use Podman Containers in rootless etups.
+Please read the documentation of Podman for a better understanding of this feature.
+
+IMPORTANT: Make sure that `podman` and a recent version of `python3`is installed on the system. +
+`podman-compose` requires a Python3.9 or newer!
+
+.root actions on OracleLinux8
+----
+dnf install -y podman python3.11
+----
+
+.setup venv for podman as nonroot user
+----
+python3.11 -m venv ~/venv/podman
+~/venv/podman/bin/pip3 install podman-compose
+----
+
+### Windows WLS2 + podman
+
+IMPORTANT: Using WLS2 with VirtualBox and Vagrant has some issues. +
+Show https://forums.virtualbox.org/viewtopic.php?t=112113[VirtualBox Forum] for more details about the dependencies. +
+Using WSL2 without VirtualBox on same host is working.
+
+This is just a small description for the setup. +
+Please read the documentation from WLS2 and podman to understand the setup.
+
+https://github.com/containers/podman/blob/main/docs/tutorials/podman-for-windows.md
+
+.prepare WLS2 environment
+----
+winget install Microsoft.WindowsTerminal
+wsl.exe --install
+----
+
+.Install podman-Desktop
+----
+choco install podman-desktop podman-cli
+----
+
+.Initialize podman machine
+----
+podman machine init
+----
+
+Do not forget to create a Ubuntu 22.04 WLS2 machine as Ansible-Controller.

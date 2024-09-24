@@ -1,3 +1,9 @@
+---
+title: "Development Environment"
+draft: false
+weight: 20
+---
+
 :toc:
 :toc-placement!:
 :toclevels: 4
@@ -6,10 +12,62 @@ toc::[]
 :sectnums:
 :sectnumlevels: 4
 
+## Container Setup
+
+include::content/docs/development/container_setup.adoc[]
+
 == How to develop in `ansible-oracle`?
 
 IMPORTANT: This is an example how most of the development in `ansible-oracle` is done. +
-A Pull-Request is only accepted, when `github-Actions` are valid.
+A Pull-Request is only accepted, when all `github-Actions` are valid.
+
+
+=== Prepare am Ansible Controller
+
+IMPORTANT: `python3.11` or newer and `python-venv` are needed to complete the following setup. +
+This could be done in a VM or WLS2 machine.
+
+==== Software Packages
+
+----
+sudo apt install -y python3.11 python3.11-venv wget curl git
+----
+
+==== Python-venv
+
+.git repository
+----
+mkdir ~/git
+cd ~/git
+git clone https://github.com/oravirt/ansible-oracle.git
+----
+
+.Python-venv
+----
+python3.11 -m venv ~/venv/ansible-oracle
+----
+
+.Install pip3 + modules
+----
+cd /tmp
+wget https://bootstrap.pypa.io/get-pip.py
+
+~/venv/ansible-oracle/python3 get-pip.py
+
+~/venv/ansible-oracle/pip3 install -r ~/git/ansible-oracle/tools/dev/requirements_dev.txt
+----
+
+==== Execution-Environment
+
+This step is only needed when `ansible-navigator` is used with an Execution-Environment. +
+`ansible-builder` automatically detects if docker or podman is used.
+Do not forget to complete the setup for docker or podman before starting `ansible-builder``.`
+
+----
+cd ~/git/ansible-oracle
+
+~/venv/ansible-oracle/bin/ansible-builder build -v 3
+----
 
 === Prepare a development environment
 
@@ -42,9 +100,14 @@ pre-commit install
 pre-commit run
 ----
 
+.Skip `ansible-lint` during `pre-commit` execution
+----
+SKIP=ansible-lint pre-commit run
+----
+
 === Ansible Navigator
 
-IMPORTANT: python3 should point to Python >=3.9, otherwise `ansible-navigator` and `ansible-lint` could not be used. +
+IMPORTANT: python3 should point to Python >=3.10, otherwise `ansible-navigator` and `ansible-lint` could not be used. +
 The `activate` script is used to change the Python environment in current shell.
 
 .configure venv for ansible-oracle
