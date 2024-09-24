@@ -11,12 +11,12 @@ example/*/ansible/navigator/replay/*json
 example/*/ansible/context
 ansible-navigator.log
 navigator/replay/*json
-.ansible
-.venv
-.direnv
 
-# local molecule settings (e.g. MOLECULE_SW_DIR)
-extensions/.env.yml
-
-# local renovate report (task renovate:check)
-.renovate-report.json
+# hugo website generator
+website/public
+website/node_modules/
+website/package-lock.json
+website/package.json
+website/.hugo_build.lock
+website/resources/_gen
+website/.cache

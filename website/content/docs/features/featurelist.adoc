@@ -1,3 +1,8 @@
+---
+title: "Featureliste"
+draft: false
+weight: 50
+---
 
 ## Supported features in ansible-oracle
 
@@ -150,27 +155,27 @@ a|dynamic shell environment link:https://github.com/opitzconsulting/oracle-scrip
 
 .Footnotes
 [horizontal]
-[[table1footnote]]^1^::
+[[table1footnote1]]^1^::
   Was supported by `ansible-oracle`. It is not tested anymore.
-[[table1footnote]]^2^::
+[[table1footnote2]]^2^::
   Still in development and not fully tested at the moment.
   Breaking changes in new commits are possible. +
   Please do not use this feature in production environments.
 [[table1footnote]]^3^::
   Limited support. Not tested for Oracle Restart & Grid-Infrastructure
-[[table1footnote]]^4^::
+[[table1footnote4]]^4^::
   Only tested with PDB on 19c+. May be work in nonCDB as well but noch in CDB.
-[[table1footnote]]^5^::
+[[table1footnote5]]^5^::
   in development and not implemented at the moment.
-[[table1footnote]]^6^::
+[[table1footnote6]]^6^::
   Not working in Real Application Cluster Setups
-[[table1footnote]]^7^::
+[[table1footnote7]]^7^::
   Limited to Parameter with SID="*"
-[[table1footnote]]^8^::
+[[table1footnote8]]^8^::
   only create/drop PDB
-[[table1footnote]]^9^::
+[[table1footnote9]]^9^::
   Ansible 2.14 or newer is mandatory since `ansible-oracle` Version 4.2.
-[[table1footnote]]^10^::
+[[table1footnote10]]^10^::
   Use the Golden-Image feature as a workaround.
-[[table1footnote]]^11^::
+[[table1footnote11]]^11^::
   Supported for Single-Instance, Oracle Restart and Oracle Grid-Infrastructure.
