@@ -1,0 +1,91 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# vagrant up
+
+Vagrant.configure("2") do |config|
+  vm_name = "ao-ansible"
+  smb_host= "172.17.160.1"
+
+  puts " "
+  puts " Ansible Development Controller for ansible-oracle project"
+  puts " "
+  puts " Hostname: #{vm_name}"
+  puts " Logins:"
+  puts "           vagrant / vagrant"
+  puts " "
+
+  # Please define the folder to the extracted archives from Oracle
+  #
+  config.vm.synced_folder ".", "/vagrant", owner: "vagrant", group: "vagrant", smb_host: "#{smb_host}", smb_username: "vagrant", smb_password: "Vagrant_2024"
+
+  # config.vm.disk :disk, size: "150GB", primary: true
+
+  config.vm.box =  "generic/oracle9"
+  config.vm.box_check_update = false
+
+  config.vm.network "private_network", bridge: "Default Switch"
+  config.vm.network :public_network
+  #, ip: lanip
+
+  config.ssh.insert_key = true
+  config.ssh.username = "vagrant"
+  config.ssh.password = "vagrant"
+
+  config.vm.hostname = "#{vm_name}.local"
+
+  config.vm.provider "hyperv" do |vb|
+    vb.vmname = vm_name
+    vb.memory = "6144"
+    vb.maxmemory  = "6144"
+    vb.cpus = 4
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+
+    # copy public key to vagrant user
+    ssh_public_key=$(find /vagrant/*.pub -printf "%p")
+    if test -f "$ssh_public_key" ; then
+      echo "Check if public key $ssh_public_key is valid."
+      if ssh-keygen -l -f "$ssh_public_key" ; then
+        echo "Add public key to /home/vagrant/.ssh/authorized_keys"
+        cat "$ssh_public_key" >> /home/vagrant/.ssh/authorized_keys
+      fi
+    fi
+
+    # create ssh-key for vagrant user
+    sudo -u vagrant ssh-keygen -N "" -t ed25519 -f /home/vagrant/.ssh/id_ed25519
+
+    sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    systemctl restart sshd.service
+
+    # mDNS
+    yum install -y avahi avahi-tools
+    systemctl enable --now avahi-daemon
+
+    if firewall-cmd --state ; then
+      firewall-cmd --permanent --add-service=mdns
+      firewall-cmd --reload
+    fi
+
+    # VSCode file watches
+    echo "VSCode file watches"
+    echo "fs.inotify.max_user_watches=524288" >> /etc/sysctl.d/99-sysctl.conf
+    sysctl -p
+
+    # Install Python3 on target host due to parallel installation of python 3.9
+    # git is needed for the local clone of ansible-oracle
+    yum install -y python3 git python3.11-pip
+
+    # Clone ansible-oracle Repository
+    mkdir /home/vagrant/git
+    cd /home/vagrant/git
+
+    git clone https://github.com/oravirt/ansible-oracle.git
+    chown -R vagrant /home/vagrant/git
+
+    # Update OS
+    yum update -y
+
+  SHELL
+end
