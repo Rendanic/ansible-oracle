@@ -11,3 +11,8 @@ example/*/ansible/navigator/replay/*json
 example/*/ansible/context
 ansible-navigator.log
 navigator/replay/*json
+
+# ignore files in vagrant folders
+*.zip
+*.vdi
+.vagrant
