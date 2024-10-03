@@ -1,0 +1,17 @@
+---
+# Example for multiple Listener in Cluster
+listener_installed:
+  - listener_name: LISTENER
+    use_gi_home: true
+    state: present
+
+oracle_listeners_config:
+  LISTENER:
+    parameter:
+      - param: LOG_FILE_NUM
+        value: 3
+      - param: LOG_FILE_SIZE
+        value: 100
+    address:
+      - port: 1521
+        protocol: TCP

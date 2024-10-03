@@ -1,0 +1,10 @@
+---
+
+configure_host_disks: false
+
+# eht1 is used as a 'host-only' network to keep a static IP in VM
+nmcli_ethernet:
+  - conn_name: eth1
+    ifname: eth1
+    ip4:
+      - "192.168.66.162/24"

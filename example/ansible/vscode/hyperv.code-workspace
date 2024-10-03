@@ -1,0 +1,40 @@
+{
+  "folders": [
+    {
+      "uri": "vscode-remote://ssh-remote+vagrant@ao-ansible.local/home/vagrant"
+    }
+  ],
+  "remoteAuthority": "ssh-remote+vagrant@ao-ansible.local",
+  "settings": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.detectIndentation": true,
+    "yaml.format.enable": true,
+    "recommendations": [
+      "ms-vscode-remote.remote-ssh"
+    ],
+    "remote.SSH.defaultExtensions": [
+      "asciidoctor.asciidoctor-vscode",
+      "dbaeumer.vscode-eslint",
+      "davidanson.vscode-markdownlint",
+      "foxundermoon.shell-format",
+      "ms-azuretools.vscode-docker",
+      "redhat.ansible",
+      "redhat.vscode-yaml",
+      "timonwong.shellcheck",
+      "yzhang.markdown-all-in-one"
+    ],
+    "remote.extensionKind": {
+      "asciidoctor.asciidoctor-vscode": "workspace",
+      "davidanson.vscode-markdownlint": "workspace",
+      "dbaeumer.vscode-eslint": "workspace",
+      "foxundermoon.shell-format": "workspace",
+      "ms-azuretools.vscode-docker": "workspace",
+      "redhat.ansible": "workspace",
+      "redhat.vscode-yaml": "workspace",
+      "timonwong.shellcheck": "workspace",
+      "yzhang.markdown-all-in-one": "workspace"
+    },
+    "ansible.python.interpreterPath": "/bin/python3"
+  }
+}

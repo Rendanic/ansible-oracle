@@ -1,0 +1,6 @@
+---
+# This playbook is used when some parts of ansible-oracle should be executed
+# Please use full_install.yml for a complete installation.
+#
+- name: Import_playbook swdb
+  import_playbook: opitzconsulting.ansible_oracle.swdb
