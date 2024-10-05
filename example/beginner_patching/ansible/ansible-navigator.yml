@@ -4,7 +4,10 @@ ansible-navigator:
   #   artifact-dir: navigator
   #   rotate-artifacts-count: 20
   execution-environment:
-    enabled: false
+    enabled: true
+    image: ansible-execution-env:latest
+    pull:
+      policy: never
     environment-variables:
       set:
         ANSIBLE_CONFIG: ansible.cfg
