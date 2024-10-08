@@ -7,7 +7,7 @@
 # db_config_home is only vlalid in this file
 #
 db_homes_installed:
-  - home: &db_config_home db19_si_se2
+  - home: &db_config_home db19-gi-ee
     apply_patches: true
     state: present
 
@@ -32,12 +32,12 @@ oracle_databases:
     # characterset:
     # Example custom DBCA-Template, usable for CDB and nonCDB
     # dbca_templatename: 19c_custom_dbca.dbt
-    storage_type: FS
+    storage_type: ASM
     oracle_database_type: MULTIPURPOSE
     redolog_size: 50M
     redolog_groups: 3
-    datafile_dest: /u02/oradata
-    recoveryfile_dest: /u02/fra
+    datafile_dest: +DATA
+    recoveryfile_dest: +FRA
     listener_name: LISTENER
     listener_port: &cdb_listener_port 1521
     # *local_listener is used in initparam as an anchor
@@ -77,9 +77,9 @@ oracle_databases:
       # "_cursor_obsolete_threshold" for 12.2+
       - {name: "_cursor_obsolete_threshold", value: '1024', scope: spfile, state: present}
       - {name: max_pdbs, value: '3', scope: both, state: present}
-      - {name: db_create_file_dest, value: '/u02/oradata', scope: both, state: present}
-      - {name: db_create_online_log_dest_1, value: '/u02/oradata', scope: both, state: present}
-      # - {name: db_create_online_log_dest_2, value: '/u02/fra', scope: both, state: present}
+      - {name: db_create_file_dest, value: '+DATA', scope: both, state: present}
+      - {name: db_create_online_log_dest_1, value: '+DATA', scope: both, state: present}
+      # - {name: db_create_online_log_dest_2, value: '+FRA', scope: both, state: present}
       # file_dest_size in bytes in 12.1.0.2 due to bug in DBCA
       - {name: db_recovery_file_dest_size, value: '100G', scope: both, state: present, dbca: false}
       - {name: open_cursors, value: '20000', scope: both, state: present, dbca: false}
