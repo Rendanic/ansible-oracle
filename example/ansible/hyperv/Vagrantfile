@@ -68,6 +68,11 @@ Vagrant.configure("2") do |config|
       firewall-cmd --reload
     fi
 
+    # VSCode file watches
+    echo "VSCode file watches"
+    echo "fs.inotify.max_user_watches=524288" >> /etc/sysctl.d/99-sysctl.conf
+    sysctl -p
+
     # Install Python3 on target host due to parallel installation of python 3.9
     # git is needed for the local clone of ansible-oracle
     yum install -y python3 git python3.11-pip
