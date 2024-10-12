@@ -1,0 +1,16 @@
+---
+# This is a special Playbook which is needed on the examples for machines running on Hyper-V
+- name: Preparations for VM on Hyper-V
+  hosts: "{{ hostgroup | default('all') }}"
+  any_errors_fatal: true
+  become: true
+  become_user: root
+  tasks:
+    - name: Configure network interfaces with nmcli
+      community.general.nmcli:
+        type: ethernet
+        conn_name: '{{ item.conn_name }}'
+        ip4: '{{ item.ip4 }}'
+        state: present
+      with_items:
+        - '{{ nmcli_ethernet | default([]) }}'

@@ -1,0 +1,3 @@
+---
+- name: Import_playbook os
+  import_playbook: opitzconsulting.ansible_oracle.os

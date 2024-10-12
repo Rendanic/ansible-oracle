@@ -1,0 +1,7 @@
+---
+# This Playbook executes all playbooks needed to do a full installation
+- name: Import_playbook beginner_hyperv
+  import_playbook: beginner_hyperv.yml
+
+- name: Import_playbook single_instance_fs
+  import_playbook: opitzconsulting.ansible_oracle.single_instance_fs
