@@ -1,5 +1,11 @@
 ---
 # This is a special Playbook which is needed on the examples for machines running on Hyper-V
+#
+# Vagrant + Hyper-V is not fully functional.
+# The following steps are not working in Vagrant 2.4.1
+# - metwork setup
+# - additional disk setup
+#
 - name: Preparations for VM on Hyper-V
   hosts: "{{ hostgroup | default('all') }}"
   any_errors_fatal: true
