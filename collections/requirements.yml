@@ -1,0 +1,4 @@
+---
+collections:
+  - name: opitzconsulting.ansible_oracle
+    version: 4.11.1
