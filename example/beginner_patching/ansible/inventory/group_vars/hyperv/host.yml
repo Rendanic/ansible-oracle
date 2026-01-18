@@ -1,10 +1,22 @@
 ---
 
-configure_host_disks: false
-
 # eht1 is used as a 'host-only' network to keep a static IP in VM
 nmcli_ethernet:
   - conn_name: eth1
     ifname: eth1
     ip4:
       - "192.168.66.162/24"
+
+configure_host_disks: true
+
+host_fs_layout:
+  - vgname: ol
+    state: present
+    filesystem:
+      - {mntp: swap, lvname: lvswap, lvsize: 17G, fstype: swap}
+      - {mntp: /, lvname: "ol-root", lvsize: 10G, fstype: xfs}
+      - {mntp: /sw, lvname: lvsw, lvsize: 15G, fstype: xfs, group: 1000}
+      - {mntp: /u01, lvname: lvorabase, lvsize: 15G, fstype: xfs}
+      - {mntp: /u02, lvname: lvoradata, lvsize: 10G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
+    disk:
+      - {device: /dev/sda, pvname: /dev/sda3}

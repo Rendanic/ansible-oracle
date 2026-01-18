@@ -1,9 +1,13 @@
 ---
 collections:
-  - name: opitzconsulting.ansible_oracle
-    version: 4.13.2
+  # - name: opitzconsulting.ansible_oracle
+  #   version: 4.13.2
 
   # following entry is for development only!
   # - name: opitzconsulting.ansible_oracle
   #   source: ./../../..
   #   type: dir
+
+  - name: https://github.com/Rendanic/ansible-oracle.git
+    type: git
+    version: workflow

@@ -1,6 +1,15 @@
 ---
-apply_patches_db: true
+apply_patches_db: false
 db_homes_config:
+
+  db2601_si_ee: &db2601_si_ee
+    version: 26.1.0.0
+    oracle_home: /u01/app/oracle/product/19/db2601_si_ee
+    edition: EE
+    opatch_minversion: 12.2.0.1.36
+    state: present
+    opatchauto: []
+    opatch: []
 
   db1919_si_se2: &db1919_si_se2
     version: 19.3.0.0
@@ -46,14 +55,21 @@ db_homes_config:
   # => Base for imagename at later stage
   db19_si_se2_golden:
     <<: *db1919_si_se2
-    # imagename: db_home_19.18.zip
+    imagename: db_home_19.15.zip
     oracle_home: /u01/app/oracle/product/19/db1
     oracle_home_name: db19_si_se2
     readonly_home: true
 
+  db26_si_ee:
+    <<: *db2601_si_ee
+    # imagename: db_home_19.19.zip
+    oracle_home: /u01/app/oracle/product/26/db1
+    oracle_home_name: db26_si_ee
+    readonly_home: true
+
   db19_si_se2:
     <<: *db1919_si_se2
-    # imagename: db_home_19.19.zip
+    imagename: db_home_19.19.zip
     oracle_home: /u01/app/oracle/product/19/db1
     oracle_home_name: db19_si_se2
     readonly_home: true

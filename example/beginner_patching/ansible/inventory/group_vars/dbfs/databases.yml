@@ -4,11 +4,11 @@
 # pdb_name anpassen
 #
 # IMPORTANT!!!
-# db_config_home is only vlalid in this file
+# db_config_home is only valid in this file
 #
 db_homes_installed:
-  - home: &db_config_home db19_si_se2
-    apply_patches: true
+  - home: &db_config_home db26_si_ee
+    apply_patches: false
     state: present
 
 

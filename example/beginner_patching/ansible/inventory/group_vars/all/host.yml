@@ -1,5 +1,7 @@
 ---
 configure_public_yum_repo: false
+configure_epel_repo: false
+
 configure_motd: false
 
 autostartup_service: true
@@ -15,17 +17,13 @@ size_in_gb_hugepages: 0
 configure_host_disks: true
 
 host_fs_layout:
-  - vgname: rootvg
+  - vgname: ol
     state: present
     filesystem:
-      - {mntp: /tmp, lvname: tmplv, lvsize: 2G, fstype: ext4}
+      - {mntp: swap, lvname: lvswap, lvsize: 17G, fstype: swap}
+      # - {mntp: /, lvname: "ol-root", lvsize: 15G, fstype: xfs}
+      - {mntp: /sw, lvname: lvsw, lvsize: 15G, fstype: xfs}
+      - {mntp: /u01, lvname: lvorabase, lvsize: 15G, fstype: xfs}
+      - {mntp: /u02, lvname: lvoradata, lvsize: 10G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
     disk:
-      - {device: /dev/sda, pvname: /dev/sda2}
-  - vgname: vgora
-    state: present
-    filesystem:
-      - {mntp: swap, lvname: lvswap, lvsize: 16G, fstype: swap}
-      - {mntp: /u01, lvname: lvorabase, lvsize: 25G, fstype: xfs}
-      - {mntp: /u02, lvname: lvoradata, lvsize: 25G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
-    disk:
-      - {device: /dev/sdb, pvname: /dev/sdb1}
+      - {device: /dev/sda, pvname: /dev/sda3}
