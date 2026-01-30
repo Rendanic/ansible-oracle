@@ -1,6 +1,6 @@
 ---
-configure_public_yum_repo: false
-configure_epel_repo: false
+configure_public_yum_repo: true
+configure_epel_repo: true
 
 configure_motd: false
 
