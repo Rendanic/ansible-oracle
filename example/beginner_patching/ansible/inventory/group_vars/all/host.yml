@@ -22,7 +22,7 @@ host_fs_layout:
     filesystem:
       - {mntp: swap, lvname: lvswap, lvsize: 17G, fstype: swap}
       # - {mntp: /, lvname: "ol-root", lvsize: 15G, fstype: xfs}
-      - {mntp: /sw, lvname: lvsw, lvsize: 15G, fstype: xfs}
+      # - {mntp: /sw, lvname: lvsw, lvsize: 15G, fstype: xfs}
       - {mntp: /u01, lvname: lvorabase, lvsize: 15G, fstype: xfs}
       - {mntp: /u02, lvname: lvoradata, lvsize: 10G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
     disk:
