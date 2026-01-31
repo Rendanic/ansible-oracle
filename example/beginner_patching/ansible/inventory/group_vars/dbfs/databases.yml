@@ -119,7 +119,7 @@ oracle_databases:
     datafile_dest: /u02/oradata
     recoveryfile_dest: /u02/fra
     listener_name: LISTENER
-    listener_port: &cdb_listener_port 1521
+    listener_port: 1521
     # *local_listener is used in initparam as an anchor
     archivelog: false
     force_logging: true
