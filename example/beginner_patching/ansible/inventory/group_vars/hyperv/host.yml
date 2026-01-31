@@ -16,7 +16,7 @@ host_fs_layout:
       - {mntp: swap, lvname: lvswap, lvsize: 17G, fstype: swap}
       - {mntp: /, lvname: "ol-root", lvsize: 10G, fstype: xfs}
       - {mntp: /sw, lvname: lvsw, lvsize: 15G, fstype: xfs, group: 1000}
-      - {mntp: /u01, lvname: lvorabase, lvsize: 15G, fstype: xfs}
-      - {mntp: /u02, lvname: lvoradata, lvsize: 10G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
+      - {mntp: /u01, lvname: lvorabase, lvsize: 20G, fstype: xfs}
+      - {mntp: /u02, lvname: lvoradata, lvsize: 15G, fstype: xfs, fsopts: "-m reflink=1 -m crc=1"}
     disk:
       - {device: /dev/sda, pvname: /dev/sda3}
