@@ -187,8 +187,8 @@ oracle_pdbs:
     cdb: *oracle_db_name
     pdb_name: PDB1
     state: present
-    # apex_state: present
-    # apex_version: 24.1
+    apex_state: present
+    apex_version: 24.1
     # apex_patchid: 36695709
     # apex_version: 23.2
     # apex_patchid: 35895964
@@ -207,7 +207,7 @@ oracle_pdbs:
   - home: db19_si_se2_golden
     listener_port: *cdb_listener_port
     cdb: DB2
-    pdb_name: PDB1
+    pdb_name: PDB2
     state: present
     # apex_state: present
     # apex_version: 24.1
