@@ -106,7 +106,7 @@ oracle_databases:
 #      - {name: offline_level0, disabled: false, weekday: "0", hour: "01", minute: "10", day: "*"}
 
   - home: db19_si_se2_golden
-    oracle_db_name: &oracle_db_name DB2
+    oracle_db_name: DB2
     oracle_db_type: SI                                   # Type of database (RAC,RACONENODE,SI)
     is_container: true
     # characterset:
