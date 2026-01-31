@@ -55,7 +55,7 @@ db_homes_config:
   # => Base for imagename at later stage
   db19_si_se2_golden:
     <<: *db1919_si_se2
-    imagename: db_home_19.15.zip
+    imagename: db_home_19.19.zip
     oracle_home: /u01/app/oracle/product/19/db1
     oracle_home_name: db19_si_se2
     readonly_home: true
