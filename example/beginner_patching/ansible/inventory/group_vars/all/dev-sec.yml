@@ -14,6 +14,8 @@ sysctl_overwrite:
 ssh_print_last_log: true
 ssh_allow_agent_forwarding: true
 ssh_permit_tunnel: false
+ssh_server_host_key_files: []
+
 # tcp_forwarding for VSCode
 ssh_allow_tcp_forwarding: 'yes'
 ssh_max_auth_retries: 3
