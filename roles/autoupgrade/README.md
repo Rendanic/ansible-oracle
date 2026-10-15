@@ -168,6 +168,16 @@ needed for the download.
 
 All other task files (e.g. `install.yml`) are always executed on the target host.
 
+_Important_
+
+With `true` the download is executed only once (`run_once`) with the variables
+of the first host in the play (`oracle_sw_patches`, `db_homes_installed`, `db_homes_config`,
+`oracle_install_version_gi`, `autoupgrade_download_patches`).
+These variables must be the same for all hosts in the play - e.g. defined in `group_vars/all`
+for the whole environment.
+When they are defined per host, limit the playbook to one host (`--limit <host>`)
+or execute it for each host.
+
 #### Default value
 
 ```YAML
@@ -203,6 +213,8 @@ AutoUpgrade does not accept Release Updates by patch number. The keyword is deri
 `OPATCH` is downloaded for each release
 
 The result is added to `autoupgrade_download_patches`.
+
+See `autoupgrade_download_run_local` for multiple hosts in the play.
 Only entries from `oracle_sw_patches` are used, where `filename` matches
 `autoupgrade_download_filename_regex` and the release from `version` is in
 `autoupgrade_download_supported_releases`. Others (e.g. APEX, cvupack) are ignored with a warning.
