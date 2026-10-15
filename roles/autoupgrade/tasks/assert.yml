@@ -26,7 +26,7 @@
   become: "{{ _autoupgrade_become }}"
   become_user: "{{ oracle_user }}"
   delegate_to: "{{ _autoupgrade_delegate_to }}"
-  run_once: "{{ autoupgrade_run_local | bool }}"
+  run_once: "{{ _autoupgrade_run_local | bool }}"
   register: _autoupgrade_java_res
   changed_when: false
   failed_when: false
@@ -38,14 +38,14 @@
       - _autoupgrade_java_res.rc == 0
     fail_msg: >-
       '{{ _autoupgrade_java }}' is not executable on
-      {{ autoupgrade_run_local | bool | ternary('Ansible controller (autoupgrade_run_local: true)', inventory_hostname) }}.
-      Set autoupgrade_java_home or install Java.
+      {{ _autoupgrade_run_local | bool | ternary('Ansible controller (autoupgrade_download_run_local: true)', inventory_hostname) }}.
+      Set {{ _autoupgrade_run_local | bool | ternary('autoupgrade_local_java_home', 'autoupgrade_java_home') }} or install Java.
       {{ _autoupgrade_java_res.msg | default(_autoupgrade_java_res.stderr | default('')) }}
 
 - name: autoupgrade | Show variables
   ansible.builtin.debug:
     msg:
-      - "autoupgrade_run_local:    {{ autoupgrade_run_local }}"
+      - "local execution:          {{ _autoupgrade_run_local }}"
       - "autoupgrade home:         {{ _autoupgrade_home }}"
       - "autoupgrade_jar:          {{ autoupgrade_jar }}"
       - "autoupgrade_force_update: {{ autoupgrade_force_update }}"

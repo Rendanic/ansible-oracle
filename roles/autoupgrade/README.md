@@ -21,6 +21,7 @@ Each area of AutoUpgrade has its own task file, which must be called with `tasks
   - [autoupgrade_download_latest](#autoupgrade_download_latest)
   - [autoupgrade_download_patches](#autoupgrade_download_patches)
   - [autoupgrade_download_platform](#autoupgrade_download_platform)
+  - [autoupgrade_download_run_local](#autoupgrade_download_run_local)
   - [autoupgrade_download_supported_releases](#autoupgrade_download_supported_releases)
   - [autoupgrade_download_use_oracle_sw_patches](#autoupgrade_download_use_oracle_sw_patches)
   - [autoupgrade_force_update](#autoupgrade_force_update)
@@ -37,8 +38,8 @@ Each area of AutoUpgrade has its own task file, which must be called with `tasks
   - [autoupgrade_keystore_recreate](#autoupgrade_keystore_recreate)
   - [autoupgrade_keystore_timeout](#autoupgrade_keystore_timeout)
   - [autoupgrade_local_home](#autoupgrade_local_home)
+  - [autoupgrade_local_java_home](#autoupgrade_local_java_home)
   - [autoupgrade_log_dir](#autoupgrade_log_dir)
-  - [autoupgrade_run_local](#autoupgrade_run_local)
 - [Discovered Tags](#discovered-tags)
 - [Dependencies](#dependencies)
 - [License](#license)
@@ -154,6 +155,25 @@ Default platform for the download, when `platform` is not set in `autoupgrade_do
 autoupgrade_download_platform: LINUX.X64
 ```
 
+### autoupgrade_download_run_local
+
+Execute the download of patches (`download_patches.yml`) on the Ansible controller.
+This includes the keystore (`keystore.yml`) and the installation of AutoUpgrade
+needed for the download.
+
+`true`: Tasks are delegated to `localhost` with `run_once` and without `become`.
+`autoupgrade_local_home` is used instead of `autoupgrade_home`.
+
+`false`: The download is executed on the target host as `oracle_user`.
+
+All other task files (e.g. `install.yml`) are always executed on the target host.
+
+#### Default value
+
+```YAML
+autoupgrade_download_run_local: true
+```
+
 ### autoupgrade_download_supported_releases
 
 Releases supported by AutoUpgrade for downloading patches.
@@ -213,7 +233,7 @@ autoupgrade_force_update: false
 ### autoupgrade_home
 
 Directory for `autoupgrade.jar` and the generated AutoUpgrade config files
-on the target host (`autoupgrade_run_local: false`).
+on the target host.
 
 #### Default value
 
@@ -226,7 +246,7 @@ autoupgrade_home: '{{ oracle_base }}/product/autoupgrade'
 Filename of AutoUpgrade.
 The file is expected under `oracle_sw_source_local` / `oracle_sw_source_www`.
 
-With `autoupgrade_run_local: true` the file is always taken from `oracle_sw_source_local`
+On the Ansible controller the file is always taken from `oracle_sw_source_local`
 (`is_sw_source_local: true`) or `oracle_sw_source_www` - `oracle_sw_copy` is ignored.
 
 #### Default value
@@ -259,7 +279,7 @@ autoupgrade_jar_url: https://download.oracle.com/otn-pub/otn_software/autoupgrad
 
 ### autoupgrade_java_home
 
-JAVA_HOME used for AutoUpgrade.
+JAVA_HOME used for AutoUpgrade on the target host.
 `java` from `PATH` is used, when `autoupgrade_java_home` is empty.
 
 #### Default value
@@ -361,12 +381,23 @@ autoupgrade_keystore_timeout: 300
 ### autoupgrade_local_home
 
 Directory for `autoupgrade.jar` and the generated AutoUpgrade config files
-on the Ansible controller (`autoupgrade_run_local: true`).
+on the Ansible controller (`autoupgrade_download_run_local: true`).
 
 #### Default value
 
 ```YAML
 autoupgrade_local_home: "{{ lookup('ansible.builtin.env', 'HOME') }}/autoupgrade"
+```
+
+### autoupgrade_local_java_home
+
+JAVA_HOME used for AutoUpgrade on the Ansible controller (`autoupgrade_download_run_local: true`).
+`java` from `PATH` is used, when `autoupgrade_local_java_home` is empty.
+
+#### Default value
+
+```YAML
+autoupgrade_local_java_home: ''
 ```
 
 ### autoupgrade_log_dir
@@ -377,25 +408,9 @@ Value for `global.global_log_dir` in the AutoUpgrade config files.
 
 ```YAML
 autoupgrade_log_dir: >-
-  {{ autoupgrade_run_local | bool
+  {{ _autoupgrade_run_local | bool
      | ternary(_autoupgrade_home + '/log', oracle_base + '/cfgtoollogs/autoupgrade')
   }}
-```
-
-### autoupgrade_run_local
-
-Execute AutoUpgrade on the Ansible controller instead of the target host.
-
-`true`: All tasks are delegated to `localhost` with `run_once` and without `become`.
-`autoupgrade_local_home` is used instead of `autoupgrade_home`.
-This is useful when AutoUpgrade is used for downloading patches only.
-
-`false`: Tasks are executed on the target host as `oracle_user`.
-
-#### Default value
-
-```YAML
-autoupgrade_run_local: false
 ```
 
 ## Discovered Tags

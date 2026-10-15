@@ -1,9 +1,13 @@
 ---
 - name: autoupgrade | Install AutoUpgrade
   ansible.builtin.include_tasks: install.yml
+  vars:
+    _autoupgrade_run_local: "{{ autoupgrade_download_run_local | bool }}"
 
 - name: autoupgrade | Manage keystore
   ansible.builtin.include_tasks: keystore.yml
+  vars:
+    _autoupgrade_run_local: "{{ autoupgrade_download_run_local | bool }}"
   when:
     - autoupgrade_keystore_manage | bool
 
@@ -11,8 +15,9 @@
   become: "{{ _autoupgrade_become }}"
   become_user: "{{ oracle_user }}"
   delegate_to: "{{ _autoupgrade_delegate_to }}"
-  run_once: "{{ autoupgrade_run_local | bool }}"
+  run_once: "{{ _autoupgrade_run_local | bool }}"
   vars:
+    _autoupgrade_run_local: "{{ autoupgrade_download_run_local | bool }}"
     _autoupgrade_download_cfg: "{{ _autoupgrade_cfg_dir }}/download_patches.cfg"
   block:
     - name: autoupgrade | Assert patch list for download

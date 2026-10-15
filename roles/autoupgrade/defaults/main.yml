@@ -1,24 +1,27 @@
 ---
-# @var autoupgrade_run_local:description: >
-# Execute AutoUpgrade on the Ansible controller instead of the target host.
+# @var autoupgrade_download_run_local:description: >
+# Execute the download of patches (`download_patches.yml`) on the Ansible controller.
+# This includes the keystore (`keystore.yml`) and the installation of AutoUpgrade
+# needed for the download.
 #
-# `true`: All tasks are delegated to `localhost` with `run_once` and without `become`.
+# `true`: Tasks are delegated to `localhost` with `run_once` and without `become`.
 # `autoupgrade_local_home` is used instead of `autoupgrade_home`.
-# This is useful when AutoUpgrade is used for downloading patches only.
 #
-# `false`: Tasks are executed on the target host as `oracle_user`.
+# `false`: The download is executed on the target host as `oracle_user`.
+#
+# All other task files (e.g. `install.yml`) are always executed on the target host.
 # @end
-autoupgrade_run_local: false
+autoupgrade_download_run_local: true
 
 # @var autoupgrade_home:description: >
 # Directory for `autoupgrade.jar` and the generated AutoUpgrade config files
-# on the target host (`autoupgrade_run_local: false`).
+# on the target host.
 # @end
 autoupgrade_home: "{{ oracle_base }}/product/autoupgrade"
 
 # @var autoupgrade_local_home:description: >
 # Directory for `autoupgrade.jar` and the generated AutoUpgrade config files
-# on the Ansible controller (`autoupgrade_run_local: true`).
+# on the Ansible controller (`autoupgrade_download_run_local: true`).
 # @end
 autoupgrade_local_home: "{{ lookup('ansible.builtin.env', 'HOME') }}/autoupgrade"
 
@@ -26,7 +29,7 @@ autoupgrade_local_home: "{{ lookup('ansible.builtin.env', 'HOME') }}/autoupgrade
 # Filename of AutoUpgrade.
 # The file is expected under `oracle_sw_source_local` / `oracle_sw_source_www`.
 #
-# With `autoupgrade_run_local: true` the file is always taken from `oracle_sw_source_local`
+# On the Ansible controller the file is always taken from `oracle_sw_source_local`
 # (`is_sw_source_local: true`) or `oracle_sw_source_www` - `oracle_sw_copy` is ignored.
 # @end
 autoupgrade_jar: autoupgrade.jar
@@ -67,7 +70,7 @@ autoupgrade_jar_url: https://download.oracle.com/otn-pub/otn_software/autoupgrad
 autoupgrade_force_update: false
 
 # @var autoupgrade_java_home:description: >
-# JAVA_HOME used for AutoUpgrade.
+# JAVA_HOME used for AutoUpgrade on the target host.
 # `java` from `PATH` is used, when `autoupgrade_java_home` is empty.
 # @end
 # @var autoupgrade_java_home:example: >
@@ -75,11 +78,17 @@ autoupgrade_force_update: false
 # @end
 autoupgrade_java_home: ""
 
+# @var autoupgrade_local_java_home:description: >
+# JAVA_HOME used for AutoUpgrade on the Ansible controller (`autoupgrade_download_run_local: true`).
+# `java` from `PATH` is used, when `autoupgrade_local_java_home` is empty.
+# @end
+autoupgrade_local_java_home: ""
+
 # @var autoupgrade_log_dir:description: >
 # Value for `global.global_log_dir` in the AutoUpgrade config files.
 # @end
 autoupgrade_log_dir: >-
-  {{ autoupgrade_run_local | bool
+  {{ _autoupgrade_run_local | bool
      | ternary(_autoupgrade_home + '/log', oracle_base + '/cfgtoollogs/autoupgrade') }}
 
 # @var autoupgrade_keystore:description: >

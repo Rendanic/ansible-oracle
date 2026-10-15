@@ -1,6 +1,11 @@
 ---
+# Execution on the Ansible controller (delegate_to localhost, run_once, no become).
+# Only download_patches.yml sets it to autoupgrade_download_run_local for itself
+# and for the included install.yml / keystore.yml (task vars override role vars).
+_autoupgrade_run_local: false
+
 _autoupgrade_home: >-
-  {{ autoupgrade_run_local | bool | ternary(autoupgrade_local_home, autoupgrade_home) }}
+  {{ _autoupgrade_run_local | bool | ternary(autoupgrade_local_home, autoupgrade_home) }}
 
 _autoupgrade_jar_path: "{{ _autoupgrade_home }}/{{ autoupgrade_jar }}"
 
@@ -22,15 +27,18 @@ _autoupgrade_keystore_cfg: "{{ _autoupgrade_cfg_dir }}/keystore.cfg"
 _autoupgrade_keystore_loaded_regex: "\\(MOS\\) - Credentials Loaded"
 _autoupgrade_keystore_failed_regex: "\\(MOS\\) - Credentials Loaded - Connection Fail"
 
+_autoupgrade_java_home: >-
+  {{ _autoupgrade_run_local | bool | ternary(autoupgrade_local_java_home, autoupgrade_java_home) }}
+
 _autoupgrade_java: >-
-  {{ (autoupgrade_java_home | length > 0)
-     | ternary(autoupgrade_java_home + '/bin/java', 'java') }}
+  {{ (_autoupgrade_java_home | length > 0)
+     | ternary(_autoupgrade_java_home + '/bin/java', 'java') }}
 
 # local execution: delegate to controller, run once, no become
 _autoupgrade_delegate_to: >-
-  {{ autoupgrade_run_local | bool | ternary('localhost', inventory_hostname) }}
+  {{ _autoupgrade_run_local | bool | ternary('localhost', inventory_hostname) }}
 
-_autoupgrade_become: "{{ not (autoupgrade_run_local | bool) }}"
+_autoupgrade_become: "{{ not (_autoupgrade_run_local | bool) }}"
 
 # oracle_sw_patches usable for AutoUpgrade: database patches for the platform
 # (e.g. p36582781_190000_Linux-x86-64.zip) with a supported release in 'version'.

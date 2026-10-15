@@ -33,7 +33,7 @@
   become: "{{ _autoupgrade_become }}"
   become_user: "{{ oracle_user }}"
   delegate_to: "{{ _autoupgrade_delegate_to }}"
-  run_once: "{{ autoupgrade_run_local | bool }}"
+  run_once: "{{ _autoupgrade_run_local | bool }}"
   block:
     - name: autoupgrade | Create directories
       ansible.builtin.file:
@@ -56,7 +56,7 @@
         remote_src: false
       when:
         - is_sw_source_local
-        - oracle_sw_copy or autoupgrade_run_local | bool
+        - oracle_sw_copy or _autoupgrade_run_local | bool
 
     - name: autoupgrade | Download from www {{ autoupgrade_jar }}
       ansible.builtin.get_url:
@@ -69,7 +69,7 @@
       environment: "{{ proxy_env }}"
       when:
         - not is_sw_source_local
-        - oracle_sw_copy or autoupgrade_run_local | bool
+        - oracle_sw_copy or _autoupgrade_run_local | bool
 
     - name: autoupgrade | Copy from remote stage {{ autoupgrade_jar }}
       ansible.builtin.copy:
@@ -80,7 +80,7 @@
         remote_src: true
       when:
         - not oracle_sw_copy
-        - not autoupgrade_run_local | bool
+        - not _autoupgrade_run_local | bool
 
     - name: autoupgrade | Get version
       ansible.builtin.command: >-
