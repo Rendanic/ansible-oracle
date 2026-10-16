@@ -1,0 +1,300 @@
+:toc:
+:toc-placement!:
+:toclevels: 4
+toc::[]
+
+:sectnums:
+:sectnumlevels: 4
+
+== Oracle AutoUpgrade
+
+IMPORTANT: The role `autoupgrade` is currently _experimental_. +
+At the moment it supports the installation of AutoUpgrade and the download of patches from My Oracle Support. +
+Patching and upgrading databases with AutoUpgrade is not implemented yet.
+
+The role `autoupgrade` uses Oracle AutoUpgrade (`autoupgrade.jar`) for:
+
+- Installation of `autoupgrade.jar` on the database servers or on the Ansible controller
+- Download of the latest `autoupgrade.jar` from Oracle into the software repository
+- Management of the AutoUpgrade keystore with the My Oracle Support credentials
+- Download of patches from My Oracle Support (`-patch -mode download`)
+
+The variables of the role are described in link:../../roles/autoupgrade/README.md[roles/autoupgrade/README.md].
+
+=== Requirements
+
+- Java on the host executing AutoUpgrade
+  * Database server: e.g. the JDK from an `ORACLE_HOME` (`autoupgrade_java_home`)
+  * Ansible controller: `java` from `PATH` or `autoupgrade_local_java_home`
+- Python module `pexpect` on the host executing AutoUpgrade for the keystore management
+  (used by `ansible.builtin.expect`)
+- My Oracle Support account (`mos_username`, `mos_password`) for downloading patches
+- Downloads with AutoUpgrade are supported for the releases 19, 21, 23 and 26 (AutoUpgrade 26.6)
+
+=== Task files
+
+IMPORTANT: The role has no `tasks/main.yml`. +
+Each area of AutoUpgrade has its own task file, which must be called with `tasks_from`.
+
+.Task files of role `autoupgrade`
+[options="header,footer"]
+|=======================
+|Task file |Description
+|`assert.yml` | Check variables and Java. Included by the other task files.
+|`install.yml` | Install `autoupgrade.jar`. Optional download of the latest version from Oracle.
+|`keystore.yml` | Create/update the keystore with the My Oracle Support credentials. Included by `download_patches.yml`.
+|`download_patches.yml` | Download patches with AutoUpgrade. Includes `install.yml` and `keystore.yml`.
+|=======================
+
+.Example: call a task file
+----
+- name: Install AutoUpgrade
+  ansible.builtin.import_role:
+    name: opitzconsulting.ansible_oracle.autoupgrade
+    tasks_from: install.yml
+----
+
+=== Playbooks
+
+.Playbooks for AutoUpgrade
+[options="header,footer"]
+|=======================
+|Playbook |Description
+|`playbooks/autoupgrade_install.yml` | Install AutoUpgrade on the database servers. `hostgroup` is mandatory.
+|`playbooks/autoupgrade_download_patches.yml` | Download patches with AutoUpgrade.
+|=======================
+
+.Install AutoUpgrade on database servers
+----
+ansible-playbook -i inventory/ -e hostgroup=dbservers playbooks/autoupgrade_install.yml
+----
+
+.Download patches and the latest autoupgrade.jar
+----
+ansible-playbook -i inventory/ -e hostgroup=dbservers -e autoupgrade_download_latest=true \
+  playbooks/autoupgrade_download_patches.yml
+----
+
+=== Execution on Ansible controller or database server
+
+AutoUpgrade is always executed on the database server as `oracle_user` - with one exception:
+
+The download of patches (`download_patches.yml`) including the keystore and the installation needed for the download
+is executed on the Ansible controller by default (`autoupgrade_download_run_local: true`).
+
+.Execution of AutoUpgrade
+[options="header,footer"]
+|=======================
+|Task file |`autoupgrade_download_run_local` |Executed on |Directory |Java
+|`install.yml` (direct call) | ignored | database server as `oracle_user` | `autoupgrade_home` | `autoupgrade_java_home`
+|`download_patches.yml` | `true` (default) | Ansible controller, `run_once`, no `become` | `autoupgrade_local_home` | `autoupgrade_local_java_home`
+|`download_patches.yml` | `false` | database server as `oracle_user` | `autoupgrade_home` | `autoupgrade_java_home`
+|=======================
+
+IMPORTANT: The download on the Ansible controller is executed only once (`run_once`) with the variables
+of the *first host* in the play. +
+`oracle_sw_patches`, `db_homes_installed`, `db_homes_config`, `oracle_install_version_gi` and
+`autoupgrade_download_patches` must be the same for all hosts in the play - e.g. defined in `group_vars/all`
+for the whole environment. +
+When they are defined per host, limit the playbook to one host (`--limit <host>`) or execute it for each host.
+
+=== Installation of autoupgrade.jar
+
+`autoupgrade.jar` is read from the software repository like all other installation media:
+
+- `is_sw_source_local: true`: copy from `oracle_sw_source_local` on the Ansible controller
+- `is_sw_source_local: false`: download from `oracle_sw_source_www`
+- `oracle_sw_copy: false`: copy from `oracle_stage_remote` on the database server (e.g. NFS mount)
+- `autoupgrade_jar_filesource`: full path to `autoupgrade.jar`, when it is not placed in the software repository
+
+On the Ansible controller `oracle_sw_copy` is ignored and the file is always taken from
+`oracle_sw_source_local` or `oracle_sw_source_www`.
+
+==== Download the latest version
+
+`autoupgrade_download_latest: true` downloads the latest `autoupgrade.jar` from Oracle (`autoupgrade_jar_url`)
+into the software repository on the Ansible controller before the installation.
+The download is done once (`run_once`) and requires `is_sw_source_local: true`.
+
+==== Update an existing installation
+
+An existing `autoupgrade.jar` is not replaced by default. +
+`autoupgrade_force_update: true` replaces the file, when it differs from the file in the software repository.
+
+.Update AutoUpgrade on all database servers with the latest version from Oracle
+----
+ansible-playbook -i inventory/ -e hostgroup=dbservers \
+  -e autoupgrade_download_latest=true -e autoupgrade_force_update=true \
+  playbooks/autoupgrade_install.yml
+----
+
+=== Keystore for My Oracle Support
+
+AutoUpgrade reads the My Oracle Support credentials from a keystore (`autoupgrade_keystore`).
+The keystore is managed by `keystore.yml` with `mos_username` and `mos_password`.
+
+NOTE: AutoUpgrade only offers an interactive console (`-load_password`) for the keystore.
+The role uses `ansible.builtin.expect` for this console.
+
+.Mandatory variables for the keystore
+[options="header,footer"]
+|=======================
+|Variable |Description
+|`mos_username` | Login for My Oracle Support
+|`mos_password` | Password for My Oracle Support
+|=======================
+
+The keystore is handled as follows:
+
+. Keystore exists: check the credentials with `list` (online check against My Oracle Support).
+  Nothing is changed, when the credentials are valid.
+. Credentials missing or invalid: add the credentials with `add`. This requires the keystore password.
+. Keystore password rejected or keystore missing: remove the keystore and create it again.
+. Verify the credentials. The play fails, when the login is not possible
+  (`autoupgrade_keystore_fail_on_invalid_credentials: true`).
+
+The keystore password is `autoupgrade_keystore_password`.
+When it is empty (default), the SHA256 hash of `mos_password` is used.
+A changed `mos_password` changes the keystore password as well - the keystore is recreated automatically.
+
+IMPORTANT: The keystore is converted to auto-login. AutoUpgrade opens it without password. +
+The keystore password is only needed for changes.
+
+.Optional variables for the keystore
+[options="header,footer"]
+|=======================
+|Variable |Default |Description
+|`autoupgrade_keystore_manage` | `true` | `false`: the keystore must exist and is not changed by the role
+|`autoupgrade_keystore_password` | `''` | Keystore password (min. 16 characters). Empty: SHA256 of `mos_password`
+|`autoupgrade_keystore_recreate` | `false` | Remove and create the keystore in each execution
+|`autoupgrade_keystore_fail_on_invalid_credentials` | `true` | Fail, when the login into My Oracle Support is not possible
+|`autoupgrade_keystore_no_log` | `true` | `false` shows the output of tasks with passwords - for debugging only!
+|=======================
+
+=== Download of patches
+
+`download_patches.yml` creates the AutoUpgrade config file `download_patches.cfg` and executes
+`autoupgrade.jar -patch -mode download`.
+The patches are placed in `autoupgrade_download_dir` (default: `oracle_sw_source_local`).
+
+Each entry in the patch list creates a `patch<n>` section in the config file.
+The patch list is built from:
+
+. `autoupgrade_download_patches`: explicit entries with AutoUpgrade keywords
+. `oracle_sw_patches`, `db_homes_installed`, `db_homes_config` and `oracle_install_version_gi`
+  (same variables as role `orasw_download_patches`), when `autoupgrade_download_use_oracle_sw_patches: true` (default)
+
+==== autoupgrade_download_patches
+
+.Attributes in `autoupgrade_download_patches`
+[options="header,footer"]
+|=======================
+|Attribute |Mandatory |Description
+|`target_version` | yes | Release, e.g. `19`, `26`
+|`patch` | yes | AutoUpgrade keywords and/or patch numbers, e.g. `RECOMMENDED`, `RU,OPATCH,OJVM,DPBP`, `RU:19.24,OPATCH`
+|`platform` | no | Default: `autoupgrade_download_platform` (`LINUX.X64`)
+|`gold_image` | no | `NO`, `AUTO`, `YES`, `ALL`. Default: `autoupgrade_download_gold_image`
+|=======================
+
+.Example `autoupgrade_download_patches`
+----
+autoupgrade_download_use_oracle_sw_patches: false
+
+autoupgrade_download_patches:
+  - target_version: 19
+    patch: RU,OPATCH,OJVM,DPBP
+    gold_image: "NO"
+----
+
+IMPORTANT: `RU` without a version downloads the latest Release Update.
+A new Release Update from Oracle leads to new downloads. Use `RU:<version>` for a fixed release.
+
+==== oracle_sw_patches
+
+The patches from `oracle_sw_patches` are added to the section of the release from `version`
+(e.g. `19.3.0.0` => `target_version=19`).
+
+Only entries are used, where
+
+- `filename` matches `autoupgrade_download_filename_regex` (database patches for Linux x86-64,
+  e.g. `p36582781_190000_Linux-x86-64.zip`) and
+- the release from `version` is in `autoupgrade_download_supported_releases`.
+
+Other entries (e.g. APEX patches `*_Generic.zip`, `cvupack_linux_ol7_x86_64.zip`) are ignored with a warning.
+
+AutoUpgrade does not accept Release Updates by patch number.
+The entries are converted into AutoUpgrade keywords:
+
+.Conversion of `oracle_sw_patches` into AutoUpgrade keywords
+[options="header,footer"]
+|=======================
+|Entry in `oracle_sw_patches` |AutoUpgrade
+|attribute `autoupgrade_patch` | value of the attribute, e.g. `RU:19.24`, `OJVM`, `DPBP`
+|attribute `ru_version`, e.g. `19.24.0.0.240716` | `RU:19.24`
+|`description` contains `OJVM` | `OJVM`
+|others | `patchid` (one-off patch)
+|=======================
+
+IMPORTANT: Set `ru_version` for each Release Update in `oracle_sw_patches`. +
+A Release Update without `ru_version` is passed as patch number and rejected by AutoUpgrade
+(`RU patches are not allowed to be specified individually`).
+
+`OPATCH` is added for each release of `oracle_sw_patches`, `db_homes_installed`
+and Grid Infrastructure/Oracle Restart (`oracle_install_option_gi`: `CRS_CONFIG` or `HA_CONFIG`).
+
+.Example `oracle_sw_patches`
+----
+oracle_sw_patches:
+  - filename: p36582781_190000_Linux-x86-64.zip
+    patchid: 36582781
+    version: 19.3.0.0
+    ru_version: 19.24.0.0.240716
+    description: Database Release Update 19.24.0.0.240716
+  - filename: p36414915_190000_Linux-x86-64.zip
+    patchid: 36414915
+    version: 19.3.0.0
+    description: OJVM 19.24
+----
+
+.Resulting section in download_patches.cfg
+----
+patch1.target_version=19
+patch1.platform=LINUX.X64
+patch1.patch=OPATCH,RU:19.24,OJVM
+----
+
+After the download, the role checks if all files from `oracle_sw_patches` exist in `autoupgrade_download_dir`.
+Missing files are reported as warning.
+
+==== Gold Image
+
+AutoUpgrade requests a gold image from the Oracle Updater service by default (`gold_image=AUTO`).
+A gold image is a complete, patched database home (approx. 5 GB).
+
+IMPORTANT: The filename of a downloaded gold image contains a timestamp
+(`db_goldimage_<release>_<update>_<timestamp>.zip`). +
+AutoUpgrade cannot detect an existing gold image and downloads it again in each execution.
+
+.Disable the download of gold images for all sections
+----
+autoupgrade_download_gold_image: "NO"
+----
+
+NOTE: Quote `"NO"` in YAML. An unquoted `NO` is a boolean - the role converts `true`/`false` into `YES`/`NO` anyway.
+
+==== Repeated downloads
+
+AutoUpgrade does not download patches again, when they already exist in `autoupgrade_download_dir`.
+The output shows `LOCATED` for existing files and `VALIDATED` for downloaded files.
+The task is reported as `changed`, when at least one file was downloaded.
+
+AutoUpgrade writes `patches_info.json` into `autoupgrade_download_dir`.
+
+=== Known limitations
+
+- Patching and upgrading databases with AutoUpgrade is not implemented yet.
+- The download on the Ansible controller uses the variables of the first host in the play (see above).
+- An explicit entry in `autoupgrade_download_patches` and the derived entry from `db_homes_installed` /
+  `oracle_sw_patches` for the same release create two sections in the config file.
+  Set `autoupgrade_download_use_oracle_sw_patches: false`, when only `autoupgrade_download_patches` should be used.
+- The filename of a downloaded gold image cannot be changed.
