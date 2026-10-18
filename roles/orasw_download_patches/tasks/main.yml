@@ -36,13 +36,8 @@
     - name: Download APEX images
       ansible.builtin.include_tasks: apex.yml
       when:
-        - ((oracle_databases | default([]) | length > 0
-            and oracle_databases | selectattr('apex_state', 'defined') | list | length > 0)
-          or
-           (oracle_databases | default([]) | length > 0
-           and oracle_pdbs | selectattr('apex_state', 'defined') | list | length > 0
-           )
-          )
+        - (oracle_databases | default([]) | selectattr('apex_state', 'defined') | list | length > 0)
+          or (oracle_pdbs | default([]) | selectattr('apex_state', 'defined') | list | length > 0)
 
     - name: Login to Oracle
       ansible.builtin.uri:

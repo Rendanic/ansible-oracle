@@ -3,10 +3,10 @@
 - name: apex | get version from oracle_databases
   ansible.builtin.set_fact:
     _orasw_download_patches_apex_versions: |-
-      {{ _download_apex_versions | default({})
+      {{ _orasw_download_patches_apex_versions | default({})
       | combine(__apex_version_dict)}}
   with_items:
-    - "{{ oracle_databases | default([]) | selectattr('apex_state', 'match', 'present') }}"
+    - "{{ oracle_databases | default([]) | selectattr('apex_state', 'defined') | selectattr('apex_state', 'match', 'present') }}"
   loop_control:
     loop_var: apex_loop
     label: >-
@@ -25,10 +25,10 @@
 - name: apex | get version from oracle_pdbs
   ansible.builtin.set_fact:
     _orasw_download_patches_apex_versions: |-
-      {{ _download_apex_versions | default({})
+      {{ _orasw_download_patches_apex_versions | default({})
       | combine(__apex_version_dict)}}
   with_items:
-    - "{{ oracle_pdbs | default([]) }}"
+    - "{{ oracle_pdbs | default([]) | selectattr('apex_state', 'defined') | selectattr('apex_state', 'match', 'present') }}"
   loop_control:
     loop_var: apex_loop
     label: >-
