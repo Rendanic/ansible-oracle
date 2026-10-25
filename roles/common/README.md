@@ -272,6 +272,7 @@ common_packages_el9:
   - autofs
   - bind-utils
   - binutils
+  - compat-openssl11
   - ethtool
   - expect
   - facter

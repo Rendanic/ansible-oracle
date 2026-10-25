@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - "common: install compat-openssl11 on RHEL9/OL9, needed by 26ai (was only added to oracle_packages, which is used for EL7 and older)"
+  - "orahost: set kernel.panic=10 in oracle_sysctl, cluvfy 26ai expects at least 1 (PRVG-1205)"
