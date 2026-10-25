@@ -222,6 +222,8 @@ asmlibsupport_rpm: "{%- if ansible_distribution == 'OracleLinux' -%}\
                         {{ asmlibsupport_rpm_el7 }}\
                       {%- elif ansible_distribution_major_version | int == 8 -%}\
                         {{ asmlibsupport_rpm_el8 }}\
+                      {%- elif ansible_distribution_major_version | int == 9 -%}\
+                        {{ asmlibsupport_rpm_el9 }}\
                       {%- else -%}\
                         oracleasm-support\
                       {%- endif -%}\
@@ -235,6 +237,9 @@ asmlib_rpm_el7: "http://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0
 
 # @var asmlib_rpm_el8:description: Name / Url for rpm oracleasm-support for RHEL8/OL8.
 asmlib_rpm_el8: "https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.17-1.el8.x86_64.rpm"
+
+# @var asmlib_rpm_el9:description: Name / Url for rpm oracleasm-support for RHEL8/OL8.
+asmlib_rpm_el9: "https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.17-1.el8.x86_64.rpm"
 
 # @var asmlib_rpm_sles:description: Name / Url for rpm oracleasm-support for SLES.
 asmlib_rpm_sles: "http://oss.oracle.com/projects/oracleasm-support/dist/files/RPMS/sles12/amd64/2.1.8/oracleasm-support-2.1.8-1.SLE12.x86_64.rpm"
@@ -467,6 +472,8 @@ oracle_sysctl:
   - {name: net.core.wmem_default, value: 262144}
   - {name: net.core.wmem_max, value: 1048576}
   - {name: kernel.panic_on_oops, value: 1}
+  # cluvfy 26ai expects at least 1 (PRVG-1205)
+  - {name: kernel.panic, value: 10}
   - {name: vm.min_free_kbytes, value: 524288}
 
 # @var oracle_sysctl_file:description: >

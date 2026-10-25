@@ -10,6 +10,7 @@ Role to configure the hostsystem for ansible-oracle
   - [asmlib_rpm_el6](#asmlib_rpm_el6)
   - [asmlib_rpm_el7](#asmlib_rpm_el7)
   - [asmlib_rpm_el8](#asmlib_rpm_el8)
+  - [asmlib_rpm_el9](#asmlib_rpm_el9)
   - [asmlib_rpm_sles](#asmlib_rpm_sles)
   - [asmlibsupport_rpm](#asmlibsupport_rpm)
   - [asmlibsupport_rpm_el6](#asmlibsupport_rpm_el6)
@@ -116,6 +117,17 @@ Name / Url for rpm oracleasm-support for RHEL8/OL8.
 
 ```YAML
 asmlib_rpm_el8: 
+  https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.17-1.el8.x86_64.rpm
+```
+
+### asmlib_rpm_el9
+
+Name / Url for rpm oracleasm-support for RHEL8/OL8.
+
+#### Default value
+
+```YAML
+asmlib_rpm_el9: 
   https://download.oracle.com/otn_software/asmlib/oracleasmlib-2.0.17-1.el8.x86_64.rpm
 ```
 
@@ -730,6 +742,7 @@ oracle_sysctl:
   - {name: net.core.wmem_default, value: 262144}
   - {name: net.core.wmem_max, value: 1048576}
   - {name: kernel.panic_on_oops, value: 1}
+  - {name: kernel.panic, value: 10}
   - {name: vm.min_free_kbytes, value: 524288}
 ```
 
