@@ -53,6 +53,8 @@ Name of RPM for cvuqdisk.
 
 RPM is installed from {{ oracle_home_gi }}/cv/rpm/
 
+Only used for GI < 19c. For 19c+ the filename is determined from {{ oracle_home_gi }}/cv/rpm/.
+
 #### Default value
 
 ```YAML

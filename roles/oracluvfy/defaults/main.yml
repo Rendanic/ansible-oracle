@@ -3,6 +3,18 @@
 # @end
 oracluvfy_home: "{{ oracle_base }}/product/cluvfy"
 
+# @var oracluvfy_executable:description: >
+# Executable for cluvfy.
+#
+# `oracluvfy_archive` is only installed, when `oracluvfy_executable` does not exist.
+# The default uses the cluvfy from `oracluvfy_archive`.
+# `runcluvfy.sh` from an unpacked Grid-Infrastructure home can be used as well.
+# @end
+# @var oracluvfy_executable:example: >
+# oracluvfy_executable: "{{ oracle_home_gi }}/runcluvfy.sh"
+# @end
+oracluvfy_executable: "{{ oracluvfy_home }}/bin/cluvfy"
+
 # @var oracluvfy_archive:description: >
 # ZIP Archive used by the role.
 # @end

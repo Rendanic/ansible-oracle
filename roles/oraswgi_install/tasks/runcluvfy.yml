@@ -27,11 +27,14 @@
     #     - ansible_distribution_major_version | int == 8
     #     - oracle_install_version_gi == "19.3.0.0"
 
+    # runcluvfy.sh from the unpacked GI home => no extra cvupack archive needed
     - name: runcluvfy | Execute cluvfy for Grid-Infrastructure
       ansible.builtin.import_role:
         name: oracluvfy
         tasks_from: execute_cluvfy.yml
       vars:
+        oracluvfy_home: "{{ oracle_home_gi }}"
+        oracluvfy_executable: "{{ oracle_home_gi }}/runcluvfy.sh"
         cluvfy_args: >-
           stage -pre
           crsinst
@@ -50,6 +53,8 @@
         name: oracluvfy
         tasks_from: execute_cluvfy.yml
       vars:
+        oracluvfy_home: "{{ oracle_home_gi }}"
+        oracluvfy_executable: "{{ oracle_home_gi }}/runcluvfy.sh"
         cluvfy_args: >-
           stage -pre hacfg
           -osdba {{ asmdba_group }}

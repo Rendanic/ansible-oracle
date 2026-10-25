@@ -1,0 +1,7 @@
+---
+minor_changes:
+  - "oracluvfy: new variable `oracluvfy_executable` to use an existing cluvfy, e.g. `runcluvfy.sh` from a GI home"
+bugfixes:
+  - "oraswgi_install: use runcluvfy.sh from the unpacked GI home instead of cvupack_linux_ol7_x86_64.zip"
+  - "oraswgi_install: install cvuqdisk from the GI home for Oracle Restart (was never installed, even with ASMFD)"
+  - "oraswgi_install: determine filename of cvuqdisk rpm from GI home for 19c+, `cvuqdisk_rpm` differs between GI releases"
