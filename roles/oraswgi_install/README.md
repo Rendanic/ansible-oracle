@@ -322,6 +322,9 @@ run_configtoolallcommand: true
 
 - (bug): ConfigTools should not depend on olr.loc...
 - (bug): ConfigTools should not depend on olr.loc...
+- (bug): ConfigTools should not depend on olr.loc...
+- (information): add selectattr to asm_diskgroups
+- (information): Check if path for patches is ok with patch_id/patch_id
 - (information): add selectattr to asm_diskgroups
 - (information): Check if path for patches is ok with patch_id/patch_id
 - (information): add selectattr to asm_diskgroups

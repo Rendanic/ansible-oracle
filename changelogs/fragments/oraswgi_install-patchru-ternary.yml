@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - "oraswgi_install: installation failed with apply_patches_gi=false and empty gi_patches, because ternary() evaluated the -applyRU directory"
