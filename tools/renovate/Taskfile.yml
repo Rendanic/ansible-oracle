@@ -45,14 +45,13 @@ tasks:
     env:
       LOG_LEVEL: '{{.LOG_LEVEL | default "warn"}}'
       RENOVATE_PLATFORM: local
-      # use renovate.json from working tree, even when not committed yet
-      RENOVATE_CONFIG_FILE: renovate.json
-      RENOVATE_REQUIRE_CONFIG: ignored
+      # renovate.json is read from the working tree (must be tracked by git)
       RENOVATE_ONBOARDING: 'false'
       RENOVATE_DRY_RUN: lookup
       RENOVATE_REPORT_TYPE: file
       RENOVATE_REPORT_PATH: '{{.RENOVATE_REPORT}}'
-      RENOVATE_ENABLED_MANAGERS: '{{.MANAGERS}}'
+      # force overrides enabledManagers from renovate.json
+      RENOVATE_FORCE: '{{if .MANAGERS}}{"enabledManagers": {{.MANAGERS}}}{{else}}{}{{end}}'
     cmds:
       - renovate
 
@@ -83,9 +82,8 @@ tasks:
       RENOVATE_PLATFORM: github
       RENOVATE_REPOSITORIES: '["{{.FORK_REPO}}"]'
       RENOVATE_BASE_BRANCH_PATTERNS: '["{{.FORK_BASE}}"]'
-      # use renovate.json from working tree, not from the fork
-      RENOVATE_CONFIG_FILE: renovate.json
-      RENOVATE_REQUIRE_CONFIG: ignored
+      # renovate.json is read from FORK_BASE in the fork - no run without it
+      RENOVATE_REQUIRE_CONFIG: required
       RENOVATE_ONBOARDING: 'false'
       # renovate skips forked repositories by default
       RENOVATE_FORK_PROCESSING: enabled

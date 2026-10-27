@@ -246,6 +246,7 @@ The configuration is in `renovate.json`, the tasks are in `tools/renovate/Taskfi
 
 The local checks read the working tree and do not change anything.
 No GitHub setup is needed.
+`renovate.json` is read from the working tree, but it must be tracked by git.
 
 ----
 task renovate:check     # pip modules and container images
@@ -282,7 +283,9 @@ export RENOVATE_TOKEN=$(gh auth token)
 === Run renovate against your fork
 
 renovate clones your fork from GitHub, creates a branch for each update and pushes it together with a Pull-Request into your fork.
-The configuration is always taken from `renovate.json` in your working tree, not from the fork.
+The configuration is taken from `renovate.json` in `FORK_BASE` of the fork, not from your working tree.
+`renovate.json` and `tools/renovate/changelog_fragment.sh` must be pushed into `FORK_BASE` before the first run.
+Without `renovate.json` renovate skips the fork (`disabled-no-config`).
 
 `FORK_REPO` is the fork on GitHub, `FORK_BASE` the branch for the updates (default: `master`).
 
@@ -298,7 +301,6 @@ The branches can be tested locally after `git fetch origin`.
 
 The branches are named `pr/renovate/<update>`, so the `github-Actions` are started for each push.
 Each update adds a changelog fragment `changelogs/fragments/renovate-<dependency>.yml` in section `trivial`, created by `tools/renovate/changelog_fragment.sh`.
-The script is executed in the clone of the fork, so it must exist in `FORK_BASE` of the fork.
 The PR reference is added later with `tools/release/fix_fragments.py`.
 
 NOTE: renovate keeps the clones and its cache in `~/.cache/renovate`.
