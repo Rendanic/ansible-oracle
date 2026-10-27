@@ -19,6 +19,8 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
+    set -e
+
     venv_dir=.venv/ansible-doctor
     if [ ! -d $venv_dir ]; then
       python -m venv $venv_dir
@@ -49,5 +51,8 @@ pkgs.mkShell {
       $venv_dir/bin/pip --require-virtualenv  install -r tools/dev/requirements_dev.txt
     fi
     . $venv_dir/bin/activate
+
+    echo "nix-shell startet"
+    set +e
   '';
 }

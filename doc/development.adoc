@@ -307,7 +307,7 @@ task renovate:fork FORK_REPO=<github user>/ansible-oracle
 The branches can be tested locally after `git fetch origin`.
 
 The branches are named `pr/renovate/<update>`, so the `github-Actions` are started for each push.
-Each update adds a changelog fragment `changelogs/fragments/renovate-<dependency>.yml` in section `trivial`, created by `tools/renovate/changelog_fragment.sh`.
+Each update adds a changelog fragment `changelogs/fragments/renovate-<dependency>.yml` in section `minor_changes`, created by `tools/renovate/changelog_fragment.sh`.
 The PR reference is added later with `tools/release/fix_fragments.py`.
 
 NOTE: renovate keeps the clones and its cache in `~/.cache/renovate`.

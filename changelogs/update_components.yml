@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - "docker: Upgrade to python3.11"
