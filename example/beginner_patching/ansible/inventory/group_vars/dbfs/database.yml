@@ -1,0 +1,8 @@
+---
+db_homes_installed:
+  - home: db26_1_si_ee
+    apply_patches: false
+    state: present
+  - home: db26_2_si_ee
+    apply_patches: false
+    state: present
