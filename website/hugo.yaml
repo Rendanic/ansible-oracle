@@ -129,13 +129,17 @@ outputs:
 
 module:
   proxy: direct
-  # doc/ and roles/ are used by content/docs/_content.gotmpl
+  # doc/, roles/ and example/ are used by content/docs/_content.gotmpl
   # A custom mount replaces the default mount of its target => content and assets are listed again.
   mounts:
     - {source: content, target: content}
     - {source: assets, target: assets}
     - {source: ../doc, target: assets/doc}
     - {source: ../roles, target: assets/roles}
+    # only the files shown on the example pages, the pages show only committed files (data/gitinfo.json)
+    - source: ../example
+      target: assets/example
+      files: ['**.yml', '**.cfg', '**/Vagrantfile', '**/requirements.txt', '! **/context/**', '! **/.venv/**', '! **/navigator/**']
   hugoVersion:
     extended: true
     min: 0.156.0
@@ -180,6 +184,8 @@ security:
       - ^git$
       - ^go$
       - postcss
+      # Dart Sass for toCSS (hugo >= 0.170 has no libsass anymore), part of docker/hugo
+      - ^sass$
     # Hugo default + GEM_*: asciidoctor in docker/hugo is installed below GEM_HOME=/usr/local/bundle
     osEnv:
       - '(?i)^((HTTPS?|NO)_PROXY|PATH(EXT)?|APPDATA|TE?MP|TERM|GO\w+|(XDG_CONFIG_)?HOME|USERPROFILE|SSH_AUTH_SOCK|DISPLAY|LANG|SYSTEMDRIVE|GEM_\w+)$'
